@@ -8,6 +8,7 @@ import com.upc.av_2.exceptions.InvalidAdminAccessRequestException;
 import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.InvalidPrivacyPreferencesRequestException;
+import com.upc.av_2.exceptions.InvalidRiskZoneRequestException;
 import com.upc.av_2.exceptions.LocationPrivacyDisabledException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
 import com.upc.av_2.exceptions.TokenOwnershipException;
@@ -24,6 +25,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
@@ -141,6 +143,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    @ExceptionHandler(InvalidRiskZoneRequestException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidRiskZoneRequestException(
+            InvalidRiskZoneRequestException exception,
+            HttpServletRequest request) {
+        log.warn("Solicitud de zona de riesgo invalida path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
+    }
+
     @ExceptionHandler(TokenOwnershipException.class)
     public ResponseEntity<ApiErrorDTO> handleTokenOwnershipException(
             TokenOwnershipException exception,
@@ -233,6 +248,20 @@ public class GlobalExceptionHandler {
         ApiErrorDTO error = buildError(
                 HttpStatus.BAD_REQUEST,
                 "El cuerpo de la solicitud no tiene un formato JSON valido",
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorDTO> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException exception,
+            HttpServletRequest request) {
+        String message = "El parametro '" + exception.getName() + "' tiene un valor invalido";
+        log.warn("Parametro invalido path={} param={} value={}",
+                request.getRequestURI(), exception.getName(), exception.getValue());
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                message,
                 request.getRequestURI());
         return ResponseEntity.badRequest().body(error);
     }

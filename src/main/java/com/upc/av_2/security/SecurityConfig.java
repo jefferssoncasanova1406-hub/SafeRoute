@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/privacy/preferences/**").authenticated()
                         .requestMatchers("/api/admin/validate-access").authenticated()
+                        .requestMatchers("/api/risk-zones/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest()
                         .authenticated())

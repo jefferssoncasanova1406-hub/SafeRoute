@@ -1,11 +1,11 @@
-TRUNCATE TABLE configuracion_privacidad, perfil, usuario, rol RESTART IDENTITY CASCADE;
+TRUNCATE TABLE zona_riesgo, ubicacion, configuracion_privacidad, perfil, usuario, rol RESTART IDENTITY CASCADE;
 
 INSERT INTO rol (nombre, descripcion) VALUES
 ('admin', 'Administrador del sistema'),
 ('usuario', 'Usuario registrado');
 
 INSERT INTO usuario (nombre, email, contrasena, fecha_registro, estado, rol_id_rol) VALUES
-('Ana Torres', 'ana.torres@demo.com', '$2a$10$2wOE8T6EyxJ0E5htSGcVPeY5vJGfveHFkNjEcNWef39/C4R2tQeM6', '2026-01-10', true, 1),
+('Ana Torres', 'ana.torres@demo.com', '$2a$12$qQoMn8NycNiny5CuWlCSPe/EEgCj5EmR2DUdBmqO4C5bG096iCNW2', '2026-01-10', true, 1),
 ('Luis Rojas', 'luis.rojas@demo.com', '$2a$10$9x4uQBOjJkw3Xrq5JclZgOn7rH0xR271GGBqBPdZiZsaAJ2bI7IuW', '2026-01-15', true, 2),
 ('Carla Vega', 'carla.vega@demo.com', '$2a$10$kFz2QxYDs2fzGEylh4G6U.xiRaY1oCbcnZ6FQcmGeXgnz9KqSXBRe', '2026-02-01', false, 2);
 
@@ -23,3 +23,35 @@ INSERT INTO configuracion_privacidad (
 (1, true, false, '2026-05-12 08:00:00'),
 (2, true, false, '2026-05-12 08:00:00'),
 (3, false, false, '2026-05-12 08:00:00');
+
+INSERT INTO ubicacion (latitud, longitud, distrito, ciudad) VALUES
+(-12.0464000, -77.0428000, 'Cercado de Lima', 'Lima'),
+(-12.1211000, -77.0305000, 'Miraflores', 'Lima');
+
+INSERT INTO zona_riesgo (
+    tipo,
+    nivel_riesgo,
+    descripcion,
+    estado,
+    coordenadas_geojson,
+    fecha_actualizacion,
+    ubicacion_id_ubicacion
+) VALUES
+(
+    'ROBO',
+    3,
+    'Zona con alta incidencia reportada durante horario nocturno',
+    true,
+    '{"type":"Polygon","coordinates":[[[-77.0432000,-12.0469000],[-77.0423000,-12.0469000],[-77.0423000,-12.0460000],[-77.0432000,-12.0460000],[-77.0432000,-12.0469000]]]}',
+    '2026-05-12 09:00:00',
+    1
+),
+(
+    'ACOSO',
+    2,
+    'Zona en observacion por reportes recurrentes de acoso callejero',
+    true,
+    '{"type":"Polygon","coordinates":[[[-77.0310000,-12.1215000],[-77.0300000,-12.1215000],[-77.0300000,-12.1207000],[-77.0310000,-12.1207000],[-77.0310000,-12.1215000]]]}',
+    '2026-05-12 09:15:00',
+    2
+);
