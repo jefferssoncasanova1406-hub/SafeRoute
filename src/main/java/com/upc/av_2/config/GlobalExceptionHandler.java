@@ -1,8 +1,10 @@
 package com.upc.av_2.config;
 
 import com.upc.av_2.dtos.ApiErrorDTO;
+import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
+import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
@@ -67,6 +69,31 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidCredentialsException(
+            InvalidCredentialsException exception,
+            HttpServletRequest request) {
+        log.warn("Autenticacion rechazada path={} message={}", request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(AccountDisabledException.class)
+    public ResponseEntity<ApiErrorDTO> handleAccountDisabledException(
+            AccountDisabledException exception,
+            HttpServletRequest request) {
+        log.warn("Acceso bloqueado por cuenta no habilitada path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

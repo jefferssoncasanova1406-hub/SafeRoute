@@ -1,16 +1,21 @@
 package com.upc.av_2.services;
 
+import com.upc.av_2.dtos.LoginRequestDTO;
+import com.upc.av_2.dtos.LoginResponseDTO;
 import com.upc.av_2.dtos.RegisterRequestDTO;
 import com.upc.av_2.dtos.RegisterResponseDTO;
 import com.upc.av_2.dtos.RegisteredUserDTO;
 import com.upc.av_2.entidades.Perfil;
 import com.upc.av_2.entidades.Rol;
 import com.upc.av_2.entidades.Usuario;
+import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
+import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.repositories.PerfilRepository;
 import com.upc.av_2.repositories.RolRepository;
 import com.upc.av_2.repositories.UsuarioRepository;
+import com.upc.av_2.security.JwtService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +37,52 @@ public class AuthService {
     private final RolRepository rolRepository;
     private final PerfilRepository perfilRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    @Transactional(readOnly = true)
+    public LoginResponseDTO login(LoginRequestDTO request) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        log.debug("Iniciando login para email={}", normalizedEmail);
+
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> {
+                    log.warn("Login rechazado por credenciales invalidas email={}", normalizedEmail);
+                    return new InvalidCredentialsException("Credenciales invalidas");
+                });
+
+        if (!passwordEncoder.matches(request.getPassword(), usuario.getContrasena())) {
+            log.warn("Login rechazado por credenciales invalidas email={}", normalizedEmail);
+            throw new InvalidCredentialsException("Credenciales invalidas");
+        }
+
+        if (!Boolean.TRUE.equals(usuario.getEstado())) {
+            log.warn("Login rechazado por cuenta no habilitada userId={} email={}",
+                    usuario.getIdUsuario(), normalizedEmail);
+            throw new AccountDisabledException("La cuenta no se encuentra habilitada");
+        }
+
+        Rol userRole = rolRepository.findById(usuario.getRolIdRol())
+                .orElseThrow(() -> new ApplicationConfigurationException(
+                        "No se encontro el rol asociado al usuario con id " + usuario.getIdUsuario()));
+
+        String token = jwtService.generateToken(usuario, userRole.getNombre());
+        RegisteredUserDTO authenticatedUser = RegisteredUserDTO.builder()
+                .id(usuario.getIdUsuario())
+                .nombre(usuario.getNombre())
+                .email(usuario.getEmail())
+                .rol(userRole.getNombre())
+                .build();
+
+        log.info("Login exitoso userId={} email={} rol={}",
+                usuario.getIdUsuario(), usuario.getEmail(), userRole.getNombre());
+
+        return LoginResponseDTO.builder()
+                .message("Inicio de sesion exitoso")
+                .token(token)
+                .tokenType("Bearer")
+                .user(authenticatedUser)
+                .build();
+    }
 
     @Transactional
     public RegisterResponseDTO register(RegisterRequestDTO request) {
