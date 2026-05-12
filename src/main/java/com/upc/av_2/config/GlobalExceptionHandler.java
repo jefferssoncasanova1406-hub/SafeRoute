@@ -4,6 +4,7 @@ import com.upc.av_2.dtos.ApiErrorDTO;
 import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
+import com.upc.av_2.exceptions.InvalidAdminAccessRequestException;
 import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
@@ -97,6 +98,19 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(InvalidAdminAccessRequestException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidAdminAccessRequestException(
+            InvalidAdminAccessRequestException exception,
+            HttpServletRequest request) {
+        log.warn("Solicitud de validacion administrativa invalida path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(UnauthenticatedUserException.class)
