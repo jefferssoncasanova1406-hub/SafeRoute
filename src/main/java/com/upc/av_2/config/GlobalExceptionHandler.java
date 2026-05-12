@@ -22,6 +22,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -57,6 +58,26 @@ public class GlobalExceptionHandler {
                         (map, error) -> map.put(error.getField(), error.getDefaultMessage()),
                         Map::putAll);
         log.warn("Validacion fallida path={} details={}", request.getRequestURI(), details);
+
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                "Datos invalidos",
+                details,
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiErrorDTO> handleBindException(
+            BindException exception,
+            HttpServletRequest request) {
+        Map<String, String> details = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(LinkedHashMap::new,
+                        (map, error) -> map.put(error.getField(), error.getDefaultMessage()),
+                        Map::putAll);
+        log.warn("Binding invalido path={} details={}", request.getRequestURI(), details);
 
         ApiErrorDTO error = buildError(
                 HttpStatus.BAD_REQUEST,

@@ -38,6 +38,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/error")
                         .permitAll()
+                        .requestMatchers("/api/mapa/**").authenticated()
                         .requestMatchers("/api/privacy/preferences/**").authenticated()
                         .requestMatchers("/api/admin/validate-access").authenticated()
                         .requestMatchers("/api/risk-zones/**").hasRole("ADMIN")
