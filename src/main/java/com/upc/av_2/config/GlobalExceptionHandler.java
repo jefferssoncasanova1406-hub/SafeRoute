@@ -4,11 +4,13 @@ import com.upc.av_2.dtos.ApiErrorDTO;
 import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
+import com.upc.av_2.exceptions.GeographicDataNotAvailableException;
 import com.upc.av_2.exceptions.InvalidAdminAccessRequestException;
 import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.InvalidPrivacyPreferencesRequestException;
 import com.upc.av_2.exceptions.InvalidRiskZoneRequestException;
+import com.upc.av_2.exceptions.InvalidSafeRouteRequestException;
 import com.upc.av_2.exceptions.LocationPrivacyDisabledException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
 import com.upc.av_2.exceptions.TokenOwnershipException;
@@ -177,6 +179,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    @ExceptionHandler(InvalidSafeRouteRequestException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidSafeRouteRequestException(
+            InvalidSafeRouteRequestException exception,
+            HttpServletRequest request) {
+        log.warn("Solicitud de ruta invalida path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
+    }
+
     @ExceptionHandler(TokenOwnershipException.class)
     public ResponseEntity<ApiErrorDTO> handleTokenOwnershipException(
             TokenOwnershipException exception,
@@ -213,6 +228,19 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(GeographicDataNotAvailableException.class)
+    public ResponseEntity<ApiErrorDTO> handleGeographicDataNotAvailableException(
+            GeographicDataNotAvailableException exception,
+            HttpServletRequest request) {
+        log.warn("Datos geograficos no disponibles path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

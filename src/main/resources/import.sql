@@ -1,4 +1,4 @@
-TRUNCATE TABLE zona_riesgo, ubicacion, configuracion_privacidad, perfil, usuario, rol RESTART IDENTITY CASCADE;
+TRUNCATE TABLE ruta_segura_zona, ruta_segura, zona_riesgo, ubicacion, configuracion_privacidad, perfil, usuario, rol RESTART IDENTITY CASCADE;
 
 INSERT INTO rol (nombre, descripcion) VALUES
 ('admin', 'Administrador del sistema'),

@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/error")
                         .permitAll()
                         .requestMatchers("/api/mapa/**").authenticated()
+                        .requestMatchers("/api/rutas/**").authenticated()
                         .requestMatchers("/api/privacy/preferences/**").authenticated()
                         .requestMatchers("/api/admin/validate-access").authenticated()
                         .requestMatchers("/api/risk-zones/**").hasRole("ADMIN")

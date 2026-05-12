@@ -8,6 +8,8 @@ public interface ZonaRiesgoRepository extends JpaRepository<ZonaRiesgo, Integer>
 
     List<ZonaRiesgo> findByEstado(Boolean estado);
 
+    List<ZonaRiesgo> findByEstadoTrueOrderByNivelRiesgoDescFechaActualizacionDesc();
+
     List<ZonaRiesgo> findByNivelRiesgo(Integer nivelRiesgo);
 
     List<ZonaRiesgo> findByEstadoAndNivelRiesgo(Boolean estado, Integer nivelRiesgo);
