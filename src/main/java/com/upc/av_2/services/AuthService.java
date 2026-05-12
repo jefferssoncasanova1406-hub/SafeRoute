@@ -7,6 +7,7 @@ import com.upc.av_2.dtos.LogoutResponseDTO;
 import com.upc.av_2.dtos.RegisterRequestDTO;
 import com.upc.av_2.dtos.RegisterResponseDTO;
 import com.upc.av_2.dtos.RegisteredUserDTO;
+import com.upc.av_2.entidades.ConfiguracionPrivacidad;
 import com.upc.av_2.entidades.Perfil;
 import com.upc.av_2.entidades.Rol;
 import com.upc.av_2.entidades.Usuario;
@@ -17,6 +18,7 @@ import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.TokenOwnershipException;
 import com.upc.av_2.exceptions.UnauthenticatedUserException;
+import com.upc.av_2.repositories.ConfiguracionPrivacidadRepository;
 import com.upc.av_2.repositories.PerfilRepository;
 import com.upc.av_2.repositories.RolRepository;
 import com.upc.av_2.repositories.UsuarioRepository;
@@ -43,10 +45,13 @@ public class AuthService {
     private static final String DEFAULT_ROLE_NAME = "usuario";
     private static final String DEFAULT_RISK_PREFERENCE = "medio";
     private static final BigDecimal DEFAULT_ALERT_RADIUS = new BigDecimal("1.0000000");
+    private static final boolean DEFAULT_REAL_TIME_LOCATION_ENABLED = true;
+    private static final boolean DEFAULT_PERSONAL_DATA_SHARING_ENABLED = false;
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PerfilRepository perfilRepository;
+    private final ConfiguracionPrivacidadRepository configuracionPrivacidadRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenRevocationService tokenRevocationService;
@@ -135,6 +140,18 @@ public class AuthService {
                 perfil.getPreferenciasRiesg(),
                 perfil.getRadioAlerta(),
                 perfil.getNotificacionesActi());
+
+        ConfiguracionPrivacidad configuracionPrivacidad = ConfiguracionPrivacidad.builder()
+                .idUsuario(usuarioGuardado.getIdUsuario())
+                .ubicacionTiempoReal(DEFAULT_REAL_TIME_LOCATION_ENABLED)
+                .compartirDatosPersonales(DEFAULT_PERSONAL_DATA_SHARING_ENABLED)
+                .fechaActualizacion(LocalDateTime.now())
+                .build();
+        configuracionPrivacidadRepository.save(configuracionPrivacidad);
+        log.info("Configuracion de privacidad creada para userId={} ubicacionTiempoReal={} compartirDatosPersonales={}",
+                usuarioGuardado.getIdUsuario(),
+                configuracionPrivacidad.getUbicacionTiempoReal(),
+                configuracionPrivacidad.getCompartirDatosPersonales());
 
         RegisteredUserDTO registeredUser = RegisteredUserDTO.builder()
                 .id(usuarioGuardado.getIdUsuario())

@@ -18,6 +18,7 @@ import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.TokenOwnershipException;
 import com.upc.av_2.exceptions.UnauthenticatedUserException;
+import com.upc.av_2.repositories.ConfiguracionPrivacidadRepository;
 import com.upc.av_2.repositories.PerfilRepository;
 import com.upc.av_2.repositories.RolRepository;
 import com.upc.av_2.repositories.UsuarioRepository;
@@ -43,6 +44,9 @@ class AuthServiceTest {
 
     @Mock
     private PerfilRepository perfilRepository;
+
+    @Mock
+    private ConfiguracionPrivacidadRepository configuracionPrivacidadRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;

@@ -7,6 +7,8 @@ import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
 import com.upc.av_2.exceptions.InvalidAdminAccessRequestException;
 import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
+import com.upc.av_2.exceptions.InvalidPrivacyPreferencesRequestException;
+import com.upc.av_2.exceptions.LocationPrivacyDisabledException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
 import com.upc.av_2.exceptions.TokenOwnershipException;
 import com.upc.av_2.exceptions.UnauthenticatedUserException;
@@ -117,13 +119,26 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorDTO> handleUnauthenticatedUserException(
             UnauthenticatedUserException exception,
             HttpServletRequest request) {
-        log.warn("Logout rechazado por ausencia de sesion autenticada path={} message={}",
+        log.warn("Operacion rechazada por ausencia de sesion autenticada path={} message={}",
                 request.getRequestURI(), exception.getMessage());
         ApiErrorDTO error = buildError(
                 HttpStatus.UNAUTHORIZED,
                 exception.getMessage(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(InvalidPrivacyPreferencesRequestException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidPrivacyPreferencesRequestException(
+            InvalidPrivacyPreferencesRequestException exception,
+            HttpServletRequest request) {
+        log.warn("Solicitud de privacidad invalida path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(TokenOwnershipException.class)
@@ -143,6 +158,19 @@ public class GlobalExceptionHandler {
             AccountDisabledException exception,
             HttpServletRequest request) {
         log.warn("Acceso bloqueado por cuenta no habilitada path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(LocationPrivacyDisabledException.class)
+    public ResponseEntity<ApiErrorDTO> handleLocationPrivacyDisabledException(
+            LocationPrivacyDisabledException exception,
+            HttpServletRequest request) {
+        log.warn("Uso de ubicacion bloqueado por privacidad path={} message={}",
                 request.getRequestURI(), exception.getMessage());
         ApiErrorDTO error = buildError(
                 HttpStatus.FORBIDDEN,

@@ -1,4 +1,4 @@
-TRUNCATE TABLE perfil, usuario, rol RESTART IDENTITY CASCADE;
+TRUNCATE TABLE configuracion_privacidad, perfil, usuario, rol RESTART IDENTITY CASCADE;
 
 INSERT INTO rol (nombre, descripcion) VALUES
 ('admin', 'Administrador del sistema'),
@@ -13,3 +13,13 @@ INSERT INTO perfil (id_usuario, preferencias_riesg, radio_alerta, notificaciones
 (1, 'alto', 1.5000000, true),
 (2, 'medio', 1.0000000, true),
 (3, 'bajo', 0.7500000, false);
+
+INSERT INTO configuracion_privacidad (
+    id_usuario,
+    ubicacion_tiempo_real,
+    compartir_datos_personales,
+    fecha_actualizacion
+) VALUES
+(1, true, false, '2026-05-12 08:00:00'),
+(2, true, false, '2026-05-12 08:00:00'),
+(3, false, false, '2026-05-12 08:00:00');
