@@ -6,7 +6,10 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.HexFormat;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,10 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("rol", String.class));
     }
 
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
     public boolean isTokenValid(String token) {
         try {
             return !isTokenExpired(token);
@@ -70,6 +77,16 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes());
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("No se pudo inicializar el algoritmo de hash del token", exception);
+        }
     }
 
     private SecretKey getSigningKey() {

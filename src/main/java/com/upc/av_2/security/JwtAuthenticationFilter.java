@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import com.upc.av_2.services.TokenRevocationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +27,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenRevocationService tokenRevocationService;
 
     @Override
     protected void doFilterInternal(
@@ -63,6 +65,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     JwtAuthenticationEntryPoint.AUTH_ERROR_MESSAGE_ATTRIBUTE,
                     "El token JWT es invalido o ha expirado");
             log.warn("JWT invalido o expirado path={}", request.getRequestURI());
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (tokenRevocationService.isTokenRevoked(token)) {
+            request.setAttribute(
+                    JwtAuthenticationEntryPoint.AUTH_ERROR_MESSAGE_ATTRIBUTE,
+                    "La sesion fue cerrada. Inicie sesion nuevamente");
+            log.warn("JWT revocado path={}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }

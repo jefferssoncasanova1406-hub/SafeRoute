@@ -2,6 +2,8 @@ package com.upc.av_2.services;
 
 import com.upc.av_2.dtos.LoginRequestDTO;
 import com.upc.av_2.dtos.LoginResponseDTO;
+import com.upc.av_2.dtos.LogoutRequestDTO;
+import com.upc.av_2.dtos.LogoutResponseDTO;
 import com.upc.av_2.dtos.RegisterRequestDTO;
 import com.upc.av_2.dtos.RegisterResponseDTO;
 import com.upc.av_2.dtos.RegisteredUserDTO;
@@ -11,18 +13,27 @@ import com.upc.av_2.entidades.Usuario;
 import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
+import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
+import com.upc.av_2.exceptions.TokenOwnershipException;
+import com.upc.av_2.exceptions.UnauthenticatedUserException;
 import com.upc.av_2.repositories.PerfilRepository;
 import com.upc.av_2.repositories.RolRepository;
 import com.upc.av_2.repositories.UsuarioRepository;
 import com.upc.av_2.security.JwtService;
+import io.jsonwebtoken.JwtException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +49,7 @@ public class AuthService {
     private final PerfilRepository perfilRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TokenRevocationService tokenRevocationService;
 
     @Transactional(readOnly = true)
     public LoginResponseDTO login(LoginRequestDTO request) {
@@ -135,5 +147,86 @@ public class AuthService {
                 .message("Usuario registrado correctamente")
                 .user(registeredUser)
                 .build();
+    }
+
+    @Transactional
+    public LogoutResponseDTO logout(String authorizationHeader, LogoutRequestDTO request, String authenticatedEmail) {
+        validateAuthenticatedUser(authenticatedEmail);
+        String token = extractBearerToken(authorizationHeader);
+        validateTokenState(token);
+
+        String username = extractUsername(token);
+        validateTokenOwnership(authenticatedEmail, username);
+
+        Date expiration = extractExpiration(token);
+        LocalDateTime expirationAt = LocalDateTime.ofInstant(expiration.toInstant(), ZoneId.systemDefault());
+
+        tokenRevocationService.revokeToken(token, username, expirationAt);
+        log.info("Logout exitoso email={} expiraEn={}", username, expirationAt);
+
+        return LogoutResponseDTO.builder()
+                .success(Boolean.TRUE)
+                .message("Sesion cerrada correctamente")
+                .build();
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+            log.warn("Logout rechazado por encabezado Authorization invalido");
+            throw new InvalidAuthorizationHeaderException(
+                    "El encabezado " + HttpHeaders.AUTHORIZATION + " debe usar el esquema Bearer");
+        }
+
+        String token = authorizationHeader.substring(7).trim();
+        if (!StringUtils.hasText(token)) {
+            log.warn("Logout rechazado por token vacio en Authorization header");
+            throw new InvalidAuthorizationHeaderException("El token JWT no puede estar vacio");
+        }
+        return token;
+    }
+
+    private void validateAuthenticatedUser(String authenticatedEmail) {
+        if (!StringUtils.hasText(authenticatedEmail)) {
+            log.warn("Logout rechazado porque no existe usuario autenticado en el contexto de seguridad");
+            throw new UnauthenticatedUserException("No existe una sesion autenticada para cerrar");
+        }
+    }
+
+    private void validateTokenState(String token) {
+        if (!jwtService.isTokenValid(token)) {
+            log.warn("Logout rechazado porque el token JWT es invalido o expirado");
+            throw new InvalidAuthorizationHeaderException("El token JWT es invalido o ha expirado");
+        }
+
+        if (tokenRevocationService.isTokenRevoked(token)) {
+            log.warn("Logout rechazado porque el token ya fue revocado");
+            throw new InvalidAuthorizationHeaderException("La sesion ya fue cerrada");
+        }
+    }
+
+    private String extractUsername(String token) {
+        try {
+            return jwtService.extractUsername(token);
+        } catch (JwtException | IllegalArgumentException exception) {
+            log.warn("Logout rechazado porque no se pudo extraer el usuario del token: {}", exception.getMessage());
+            throw new InvalidAuthorizationHeaderException("El token JWT es invalido o ha expirado");
+        }
+    }
+
+    private Date extractExpiration(String token) {
+        try {
+            return jwtService.extractExpiration(token);
+        } catch (JwtException | IllegalArgumentException exception) {
+            log.warn("Logout rechazado porque no se pudo extraer la expiracion del token: {}", exception.getMessage());
+            throw new InvalidAuthorizationHeaderException("El token JWT es invalido o ha expirado");
+        }
+    }
+
+    private void validateTokenOwnership(String authenticatedEmail, String tokenUsername) {
+        if (!authenticatedEmail.equalsIgnoreCase(tokenUsername)) {
+            log.warn("Logout rechazado por incongruencia entre usuario autenticado={} y token={}",
+                    authenticatedEmail, tokenUsername);
+            throw new TokenOwnershipException("El token no pertenece al usuario autenticado");
+        }
     }
 }

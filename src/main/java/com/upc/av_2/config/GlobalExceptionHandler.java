@@ -4,8 +4,11 @@ import com.upc.av_2.dtos.ApiErrorDTO;
 import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.EmailAlreadyRegisteredException;
+import com.upc.av_2.exceptions.InvalidAuthorizationHeaderException;
 import com.upc.av_2.exceptions.InvalidCredentialsException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
+import com.upc.av_2.exceptions.TokenOwnershipException;
+import com.upc.av_2.exceptions.UnauthenticatedUserException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -81,6 +84,44 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(InvalidAuthorizationHeaderException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidAuthorizationHeaderException(
+            InvalidAuthorizationHeaderException exception,
+            HttpServletRequest request) {
+        log.warn("Encabezado Authorization invalido path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(UnauthenticatedUserException.class)
+    public ResponseEntity<ApiErrorDTO> handleUnauthenticatedUserException(
+            UnauthenticatedUserException exception,
+            HttpServletRequest request) {
+        log.warn("Logout rechazado por ausencia de sesion autenticada path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(TokenOwnershipException.class)
+    public ResponseEntity<ApiErrorDTO> handleTokenOwnershipException(
+            TokenOwnershipException exception,
+            HttpServletRequest request) {
+        log.warn("Token no autorizado path={} message={}", request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(AccountDisabledException.class)
