@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,6 +68,20 @@ public class RiskZoneController {
 
         RiskZoneOperationResponseDTO response = riskZoneService.deactivateRiskZone(authenticatedEmail, idZona);
         log.info("Desactivacion de zona de riesgo completada email={} zoneId={}",
+                authenticatedEmail, response.getZona().getIdZona());
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RiskZoneOperationResponseDTO> deleteRiskZone(
+            @PathVariable("id") Integer idZona,
+            Authentication authentication) {
+        String authenticatedEmail = authentication != null ? authentication.getName() : null;
+        log.info("Solicitud de eliminacion logica de zona de riesgo recibida email={} zoneId={}",
+                authenticatedEmail, idZona);
+
+        RiskZoneOperationResponseDTO response = riskZoneService.deactivateRiskZone(authenticatedEmail, idZona);
+        log.info("Eliminacion logica de zona de riesgo completada email={} zoneId={}",
                 authenticatedEmail, response.getZona().getIdZona());
         return ResponseEntity.ok(response);
     }
