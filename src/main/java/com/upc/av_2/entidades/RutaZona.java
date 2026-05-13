@@ -16,7 +16,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RutaZona {
+public class RutaZona extends EntidadAuditable {
 
     @EmbeddedId
     private RutaZonaId id;
