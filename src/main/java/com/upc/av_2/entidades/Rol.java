@@ -2,10 +2,14 @@ package com.upc.av_2.entidades;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,4 +35,8 @@ public class Rol extends EntidadAuditable {
 
     @Column(name = "descripcion", nullable = false, length = 50)
     private String descripcion;
+
+    @OneToMany(mappedBy = "rol", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Usuario> usuarios = new ArrayList<>();
 }

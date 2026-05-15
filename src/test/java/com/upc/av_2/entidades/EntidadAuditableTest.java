@@ -19,7 +19,7 @@ class EntidadAuditableTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 10))
                 .estado(Boolean.TRUE)
-                .rolIdRol(1)
+                .rol(Rol.builder().idRol(1).nombre("admin").build())
                 .build();
         usuario.setAuditoria(null);
 
@@ -42,7 +42,7 @@ class EntidadAuditableTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
         LocalDateTime fechaCreacion = LocalDateTime.of(2026, 5, 1, 9, 0);
         LocalDateTime fechaModificacion = LocalDateTime.of(2026, 5, 1, 9, 30);

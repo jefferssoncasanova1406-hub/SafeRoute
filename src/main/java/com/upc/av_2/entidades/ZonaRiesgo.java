@@ -2,11 +2,17 @@ package com.upc.av_2.entidades;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,6 +51,11 @@ public class ZonaRiesgo extends EntidadAuditable {
     @Column(name = "fecha_actualizacion", nullable = false)
     private LocalDateTime fechaActualizacion;
 
-    @Column(name = "Ubicacion_ID_Ubicacion", nullable = false)
-    private Integer ubicacionIdUbicacion;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "Ubicacion_ID_Ubicacion", nullable = false)
+    private Ubicacion ubicacion;
+
+    @OneToMany(mappedBy = "zona", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<RutaZona> rutasZona = new ArrayList<>();
 }

@@ -64,13 +64,13 @@ public class RiskZoneMapService {
         }
 
         List<ZonaRiesgo> zonas = zonaRiesgoRepository
-                .findByEstadoTrueAndUbicacionIdUbicacionInOrderByNivelRiesgoDescFechaActualizacionDesc(ubicacionIds);
+                .findByEstadoTrueAndUbicacion_IdUbicacionInOrderByNivelRiesgoDescFechaActualizacionDesc(ubicacionIds);
         if (zonas.isEmpty()) {
             return buildEmptyResponse(normalizedRequest);
         }
 
         List<RiskZoneMapZoneDTO> zonasResponse = zonas.stream()
-                .map(zona -> buildMapZone(zona, ubicacionesById.get(zona.getUbicacionIdUbicacion())))
+                .map(zona -> buildMapZone(zona, ubicacionesById.get(zona.getUbicacion().getIdUbicacion())))
                 .toList();
 
         log.info("Consulta de mapa completada email={} ciudad={} distrito={} totalZonas={}",

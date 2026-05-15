@@ -9,7 +9,6 @@ import com.upc.av_2.exceptions.ApplicationConfigurationException;
 import com.upc.av_2.exceptions.InvalidAdminAccessRequestException;
 import com.upc.av_2.exceptions.ResourceNotFoundException;
 import com.upc.av_2.exceptions.UnauthenticatedUserException;
-import com.upc.av_2.repositories.RolRepository;
 import com.upc.av_2.repositories.UsuarioRepository;
 import java.util.Set;
 import java.util.Locale;
@@ -28,7 +27,6 @@ public class AdminAccessService {
     private static final Set<String> ALLOWED_ACTIONS = Set.of("READ", "CREATE", "UPDATE", "DELETE");
 
     private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
 
     @Transactional(readOnly = true)
     public AdminAccessValidationResponseDTO validateAdministrativeAccess(
@@ -56,9 +54,11 @@ public class AdminAccessService {
             throw new AccountDisabledException("La cuenta no se encuentra habilitada");
         }
 
-        Rol rol = rolRepository.findById(usuario.getRolIdRol())
-                .orElseThrow(() -> new ApplicationConfigurationException(
-                        "No se encontro el rol asociado al usuario con id " + usuario.getIdUsuario()));
+        Rol rol = usuario.getRol();
+        if (rol == null) {
+            throw new ApplicationConfigurationException(
+                    "No se encontro el rol asociado al usuario con id " + usuario.getIdUsuario());
+        }
 
         boolean authorized = ADMIN_ROLE_NAME.equalsIgnoreCase(rol.getNombre());
         String message = authorized ? "Acceso autorizado" : "Acceso no autorizado";

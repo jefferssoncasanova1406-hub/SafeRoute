@@ -14,6 +14,7 @@ import com.upc.av_2.dtos.RiskZoneListResponseDTO;
 import com.upc.av_2.dtos.RiskZoneLocationDTO;
 import com.upc.av_2.dtos.RiskZoneOperationResponseDTO;
 import com.upc.av_2.dtos.RiskZoneRequestDTO;
+import com.upc.av_2.entidades.Rol;
 import com.upc.av_2.entidades.Ubicacion;
 import com.upc.av_2.entidades.Usuario;
 import com.upc.av_2.entidades.ZonaRiesgo;
@@ -89,6 +90,13 @@ class RiskZoneServiceTest {
     @Test
     void getRiskZonesShouldFilterByEstadoAndNivelRiesgo() {
         Usuario admin = buildAdminUser();
+        Ubicacion ubicacion = Ubicacion.builder()
+                .idUbicacion(10)
+                .latitud(new BigDecimal("-12.0464000"))
+                .longitud(new BigDecimal("-77.0428000"))
+                .distrito("Cercado de Lima")
+                .ciudad("Lima")
+                .build();
         ZonaRiesgo zonaRiesgo = ZonaRiesgo.builder()
                 .idZona(5)
                 .tipo("ROBO")
@@ -97,14 +105,7 @@ class RiskZoneServiceTest {
                 .estado(Boolean.TRUE)
                 .coordenadasGeojson("{\"type\":\"Polygon\",\"coordinates\":[[[-77.0432,-12.0469],[-77.0423,-12.0469],[-77.0423,-12.0460],[-77.0432,-12.0460],[-77.0432,-12.0469]]]}" )
                 .fechaActualizacion(LocalDateTime.of(2026, 5, 12, 10, 0))
-                .ubicacionIdUbicacion(10)
-                .build();
-        Ubicacion ubicacion = Ubicacion.builder()
-                .idUbicacion(10)
-                .latitud(new BigDecimal("-12.0464000"))
-                .longitud(new BigDecimal("-77.0428000"))
-                .distrito("Cercado de Lima")
-                .ciudad("Lima")
+                .ubicacion(ubicacion)
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("ana.torres@demo.com")).thenReturn(Optional.of(admin));
@@ -123,6 +124,13 @@ class RiskZoneServiceTest {
     @Test
     void deactivateRiskZoneShouldMarkZoneAsInactive() {
         Usuario admin = buildAdminUser();
+        Ubicacion ubicacion = Ubicacion.builder()
+                .idUbicacion(10)
+                .latitud(new BigDecimal("-12.0464000"))
+                .longitud(new BigDecimal("-77.0428000"))
+                .distrito("Cercado de Lima")
+                .ciudad("Lima")
+                .build();
         ZonaRiesgo zonaRiesgo = ZonaRiesgo.builder()
                 .idZona(5)
                 .tipo("ROBO")
@@ -131,21 +139,12 @@ class RiskZoneServiceTest {
                 .estado(Boolean.TRUE)
                 .coordenadasGeojson("{\"type\":\"Polygon\",\"coordinates\":[[[-77.0432,-12.0469],[-77.0423,-12.0469],[-77.0423,-12.0460],[-77.0432,-12.0460],[-77.0432,-12.0469]]]}" )
                 .fechaActualizacion(LocalDateTime.of(2026, 5, 12, 10, 0))
-                .ubicacionIdUbicacion(10)
-                .build();
-        Ubicacion ubicacion = Ubicacion.builder()
-                .idUbicacion(10)
-                .latitud(new BigDecimal("-12.0464000"))
-                .longitud(new BigDecimal("-77.0428000"))
-                .distrito("Cercado de Lima")
-                .ciudad("Lima")
+                .ubicacion(ubicacion)
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("ana.torres@demo.com")).thenReturn(Optional.of(admin));
         when(zonaRiesgoRepository.findById(5)).thenReturn(Optional.of(zonaRiesgo));
         when(zonaRiesgoRepository.save(any(ZonaRiesgo.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(ubicacionRepository.findById(10)).thenReturn(Optional.of(ubicacion));
-
         RiskZoneOperationResponseDTO response =
                 riskZoneService.deactivateRiskZone("ana.torres@demo.com", 5);
 
@@ -219,7 +218,7 @@ class RiskZoneServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 10))
                 .estado(Boolean.TRUE)
-                .rolIdRol(1)
+                .rol(Rol.builder().idRol(1).nombre("admin").build())
                 .build();
     }
 

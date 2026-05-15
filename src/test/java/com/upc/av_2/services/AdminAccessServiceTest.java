@@ -47,16 +47,14 @@ class AdminAccessServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 10))
                 .estado(Boolean.TRUE)
-                .rolIdRol(1)
-                .build();
-        Rol rol = Rol.builder()
-                .idRol(1)
-                .nombre("admin")
-                .descripcion("Administrador del sistema")
+                .rol(Rol.builder()
+                        .idRol(1)
+                        .nombre("admin")
+                        .descripcion("Administrador del sistema")
+                        .build())
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("ana.torres@demo.com")).thenReturn(Optional.of(usuario));
-        when(rolRepository.findById(1)).thenReturn(Optional.of(rol));
 
         AdminAccessValidationResponseDTO response =
                 adminAccessService.validateAdministrativeAccess(request, "ana.torres@demo.com");
@@ -81,16 +79,14 @@ class AdminAccessServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
-                .build();
-        Rol rol = Rol.builder()
-                .idRol(2)
-                .nombre("usuario")
-                .descripcion("Usuario registrado")
+                .rol(Rol.builder()
+                        .idRol(2)
+                        .nombre("usuario")
+                        .descripcion("Usuario registrado")
+                        .build())
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
-        when(rolRepository.findById(2)).thenReturn(Optional.of(rol));
 
         AdminAccessValidationResponseDTO response =
                 adminAccessService.validateAdministrativeAccess(request, "luis.rojas@demo.com");

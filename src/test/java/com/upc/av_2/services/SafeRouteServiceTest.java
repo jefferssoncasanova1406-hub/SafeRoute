@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upc.av_2.dtos.SafeRoutePointDTO;
 import com.upc.av_2.dtos.SafeRouteRequestDTO;
 import com.upc.av_2.dtos.SafeRouteResponseDTO;
+import com.upc.av_2.entidades.Rol;
 import com.upc.av_2.entidades.Ruta;
 import com.upc.av_2.entidades.Ubicacion;
 import com.upc.av_2.entidades.Usuario;
@@ -68,6 +69,13 @@ class SafeRouteServiceTest {
     @Test
     void calculateSafeRouteShouldPersistRouteAndDetectCrossedRiskZones() {
         Usuario user = buildActiveUser();
+        Ubicacion location = Ubicacion.builder()
+                .idUbicacion(10)
+                .latitud(new BigDecimal("-12.0464000"))
+                .longitud(new BigDecimal("-77.0428000"))
+                .distrito("Cercado de Lima")
+                .ciudad("Lima")
+                .build();
         ZonaRiesgo riskZone = ZonaRiesgo.builder()
                 .idZona(5)
                 .tipo("ROBO")
@@ -78,14 +86,7 @@ class SafeRouteServiceTest {
                         "{\"type\":\"Polygon\",\"coordinates\":[[[-77.0432000,-12.0469000],[-77.0423000,-12.0469000],[-77.0423000,-12.0460000],[-77.0432000,-12.0460000],[-77.0432000,-12.0469000]]]}"
                 )
                 .fechaActualizacion(LocalDateTime.of(2026, 5, 12, 9, 0))
-                .ubicacionIdUbicacion(10)
-                .build();
-        Ubicacion location = Ubicacion.builder()
-                .idUbicacion(10)
-                .latitud(new BigDecimal("-12.0464000"))
-                .longitud(new BigDecimal("-77.0428000"))
-                .distrito("Cercado de Lima")
-                .ciudad("Lima")
+                .ubicacion(location)
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(user));
@@ -217,7 +218,7 @@ class SafeRouteServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
     }
 }

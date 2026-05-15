@@ -2,11 +2,15 @@ package com.upc.av_2.entidades;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,4 +42,8 @@ public class Ubicacion extends EntidadAuditable {
 
     @Column(name = "ciudad", nullable = false, length = 100)
     private String ciudad;
+
+    @OneToMany(mappedBy = "ubicacion", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ZonaRiesgo> zonasRiesgo = new ArrayList<>();
 }

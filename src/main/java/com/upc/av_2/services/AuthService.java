@@ -78,9 +78,11 @@ public class AuthService {
             throw new AccountDisabledException("La cuenta no se encuentra habilitada");
         }
 
-        Rol userRole = rolRepository.findById(usuario.getRolIdRol())
-                .orElseThrow(() -> new ApplicationConfigurationException(
-                        "No se encontro el rol asociado al usuario con id " + usuario.getIdUsuario()));
+        Rol userRole = usuario.getRol();
+        if (userRole == null) {
+            throw new ApplicationConfigurationException(
+                    "No se encontro el rol asociado al usuario con id " + usuario.getIdUsuario());
+        }
 
         String token = jwtService.generateToken(usuario, userRole.getNombre());
         RegisteredUserDTO authenticatedUser = RegisteredUserDTO.builder()
@@ -122,14 +124,14 @@ public class AuthService {
                 .contrasena(passwordEncoder.encode(request.getPassword()))
                 .fechaRegistro(LocalDate.now())
                 .estado(Boolean.TRUE)
-                .rolIdRol(defaultRole.getIdRol())
+                .rol(defaultRole)
                 .build();
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         log.info("Usuario creado userId={} email={}", usuarioGuardado.getIdUsuario(), usuarioGuardado.getEmail());
 
         Perfil perfil = Perfil.builder()
-                .idUsuario(usuarioGuardado.getIdUsuario())
+                .usuario(usuarioGuardado)
                 .preferenciasRiesg(DEFAULT_RISK_PREFERENCE)
                 .radioAlerta(DEFAULT_ALERT_RADIUS)
                 .notificacionesActi(Boolean.TRUE)
@@ -142,7 +144,7 @@ public class AuthService {
                 perfil.getNotificacionesActi());
 
         ConfiguracionPrivacidad configuracionPrivacidad = ConfiguracionPrivacidad.builder()
-                .idUsuario(usuarioGuardado.getIdUsuario())
+                .usuario(usuarioGuardado)
                 .ubicacionTiempoReal(DEFAULT_REAL_TIME_LOCATION_ENABLED)
                 .compartirDatosPersonales(DEFAULT_PERSONAL_DATA_SHARING_ENABLED)
                 .fechaActualizacion(LocalDateTime.now())

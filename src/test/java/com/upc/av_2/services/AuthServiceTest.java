@@ -66,6 +66,11 @@ class AuthServiceTest {
                 .email("luis.rojas@demo.com")
                 .password("12345678")
                 .build();
+        Rol rol = Rol.builder()
+                .idRol(2)
+                .nombre("usuario")
+                .descripcion("Usuario registrado")
+                .build();
         Usuario usuario = Usuario.builder()
                 .idUsuario(2)
                 .nombre("Luis Rojas")
@@ -73,17 +78,11 @@ class AuthServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
-                .build();
-        Rol rol = Rol.builder()
-                .idRol(2)
-                .nombre("usuario")
-                .descripcion("Usuario registrado")
+                .rol(rol)
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("12345678", "$2a$10$hash")).thenReturn(true);
-        when(rolRepository.findById(2)).thenReturn(Optional.of(rol));
         when(jwtService.generateToken(usuario, "usuario")).thenReturn("jwt-token");
 
         LoginResponseDTO response = authService.login(request);
@@ -106,7 +105,7 @@ class AuthServiceTest {
                 .email("luis.rojas@demo.com")
                 .contrasena("$2a$10$hash")
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
@@ -117,7 +116,6 @@ class AuthServiceTest {
                 () -> authService.login(request));
 
         assertEquals("Credenciales invalidas", exception.getMessage());
-        verify(rolRepository, never()).findById(any());
         verify(jwtService, never()).generateToken(any(), any());
     }
 
@@ -132,7 +130,7 @@ class AuthServiceTest {
                 .email("carla.vega@demo.com")
                 .contrasena("$2a$10$hash")
                 .estado(Boolean.FALSE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("carla.vega@demo.com")).thenReturn(Optional.of(usuario));
@@ -143,7 +141,6 @@ class AuthServiceTest {
                 () -> authService.login(request));
 
         assertEquals("La cuenta no se encuentra habilitada", exception.getMessage());
-        verify(rolRepository, never()).findById(any());
         verify(jwtService, never()).generateToken(any(), any());
     }
 

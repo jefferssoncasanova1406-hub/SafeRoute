@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.upc.av_2.dtos.PrivacyPreferencesRequestDTO;
 import com.upc.av_2.dtos.PrivacyPreferencesResponseDTO;
 import com.upc.av_2.entidades.ConfiguracionPrivacidad;
+import com.upc.av_2.entidades.Rol;
 import com.upc.av_2.entidades.Usuario;
 import com.upc.av_2.exceptions.AccountDisabledException;
 import com.upc.av_2.exceptions.InvalidPrivacyPreferencesRequestException;
@@ -48,11 +49,11 @@ class PrivacyPreferencesServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
-        when(configuracionPrivacidadRepository.findByIdUsuario(2)).thenReturn(Optional.empty());
+        when(configuracionPrivacidadRepository.findByUsuario_IdUsuario(2)).thenReturn(Optional.empty());
         when(configuracionPrivacidadRepository.save(any(ConfiguracionPrivacidad.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -75,11 +76,11 @@ class PrivacyPreferencesServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
         ConfiguracionPrivacidad configuracionPrivacidad = ConfiguracionPrivacidad.builder()
                 .idConfiguracionPrivacidad(10)
-                .idUsuario(2)
+                .usuario(usuario)
                 .ubicacionTiempoReal(Boolean.TRUE)
                 .compartirDatosPersonales(Boolean.FALSE)
                 .fechaActualizacion(LocalDateTime.of(2026, 5, 12, 10, 0))
@@ -90,7 +91,7 @@ class PrivacyPreferencesServiceTest {
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
-        when(configuracionPrivacidadRepository.findByIdUsuario(2))
+        when(configuracionPrivacidadRepository.findByUsuario_IdUsuario(2))
                 .thenReturn(Optional.of(configuracionPrivacidad));
         when(configuracionPrivacidadRepository.save(any(ConfiguracionPrivacidad.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -122,7 +123,7 @@ class PrivacyPreferencesServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 2, 1))
                 .estado(Boolean.FALSE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("carla.vega@demo.com")).thenReturn(Optional.of(usuario));
@@ -143,18 +144,18 @@ class PrivacyPreferencesServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
         ConfiguracionPrivacidad configuracionPrivacidad = ConfiguracionPrivacidad.builder()
                 .idConfiguracionPrivacidad(10)
-                .idUsuario(2)
+                .usuario(usuario)
                 .ubicacionTiempoReal(Boolean.FALSE)
                 .compartirDatosPersonales(Boolean.TRUE)
                 .fechaActualizacion(LocalDateTime.of(2026, 5, 12, 10, 0))
                 .build();
 
         when(usuarioRepository.findById(2)).thenReturn(Optional.of(usuario));
-        when(configuracionPrivacidadRepository.findByIdUsuario(2))
+        when(configuracionPrivacidadRepository.findByUsuario_IdUsuario(2))
                 .thenReturn(Optional.of(configuracionPrivacidad));
 
         LocationPrivacyDisabledException exception = assertThrows(
