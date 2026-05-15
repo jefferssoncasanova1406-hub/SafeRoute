@@ -1,7 +1,5 @@
 package com.upc.av_2.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upc.av_2.dtos.RiskZoneDetailDTO;
 import com.upc.av_2.dtos.RiskZoneGeometryDTO;
 import com.upc.av_2.dtos.RiskZoneListResponseDTO;
@@ -44,7 +42,8 @@ public class RiskZoneService {
     private final ZonaRiesgoRepository zonaRiesgoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final UsuarioRepository usuarioRepository;
-    private final ObjectMapper objectMapper;
+    private final GeometryJsonService geometryJsonService;
+    private final RiskLevelCatalog riskLevelCatalog;
 
     @Transactional
     public RiskZoneOperationResponseDTO createRiskZone(String authenticatedEmail, RiskZoneRequestDTO request) {
@@ -205,7 +204,7 @@ public class RiskZoneService {
     }
 
     private void validateRiskLevelFilter(Integer nivelRiesgo) {
-        if (nivelRiesgo != null && (nivelRiesgo < 1 || nivelRiesgo > 3)) {
+        if (nivelRiesgo != null && !riskLevelCatalog.isSupported(nivelRiesgo)) {
             log.warn("Consulta de zonas de riesgo rechazada por nivelRiesgo invalido nivelRiesgo={}", nivelRiesgo);
             throw new InvalidRiskZoneRequestException("El nivel de riesgo debe estar entre 1 y 3");
         }
@@ -377,23 +376,18 @@ public class RiskZoneService {
     }
 
     private String serializeGeometry(RiskZoneGeometryDTO geometria) {
-        try {
-            return objectMapper.writeValueAsString(geometria);
-        } catch (JsonProcessingException exception) {
-            log.error("No se pudo serializar la geometria de la zona de riesgo", exception);
-            throw new ApplicationConfigurationException(
-                    "No se pudo serializar la geometria de la zona de riesgo");
-        }
+        return geometryJsonService.write(
+                geometria,
+                "No se pudo serializar la geometria de la zona de riesgo",
+                "No se pudo serializar la geometria de la zona de riesgo");
     }
 
     private RiskZoneGeometryDTO deserializeGeometry(String geometriaJson) {
-        try {
-            return objectMapper.readValue(geometriaJson, RiskZoneGeometryDTO.class);
-        } catch (JsonProcessingException exception) {
-            log.error("No se pudo deserializar la geometria almacenada de la zona de riesgo", exception);
-            throw new ApplicationConfigurationException(
-                    "No se pudo deserializar la geometria de la zona de riesgo");
-        }
+        return geometryJsonService.read(
+                geometriaJson,
+                RiskZoneGeometryDTO.class,
+                "No se pudo deserializar la geometria almacenada de la zona de riesgo",
+                "No se pudo deserializar la geometria de la zona de riesgo");
     }
 
     private RiskZoneDetailDTO buildRiskZoneDetail(ZonaRiesgo zonaRiesgo, Ubicacion ubicacion) {
