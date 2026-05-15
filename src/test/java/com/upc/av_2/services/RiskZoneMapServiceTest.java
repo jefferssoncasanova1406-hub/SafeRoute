@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upc.av_2.dtos.RiskZoneMapRequestDTO;
 import com.upc.av_2.dtos.RiskZoneMapResponseDTO;
+import com.upc.av_2.entidades.Rol;
 import com.upc.av_2.entidades.Ubicacion;
 import com.upc.av_2.entidades.Usuario;
 import com.upc.av_2.entidades.ZonaRiesgo;
@@ -68,13 +69,13 @@ class RiskZoneMapServiceTest {
                         "{\"type\":\"Polygon\",\"coordinates\":[[[-77.0310,-12.1215],[-77.0300,-12.1215],[-77.0300,-12.1207],[-77.0310,-12.1207],[-77.0310,-12.1215]]]}"
                 )
                 .fechaActualizacion(LocalDateTime.of(2026, 5, 12, 10, 0))
-                .ubicacionIdUbicacion(10)
+                .ubicacion(ubicacion)
                 .build();
 
         when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(user));
         when(ubicacionRepository.findByCiudadIgnoreCaseAndDistritoIgnoreCase("Lima", "Miraflores"))
                 .thenReturn(List.of(ubicacion));
-        when(zonaRiesgoRepository.findByEstadoTrueAndUbicacionIdUbicacionInOrderByNivelRiesgoDescFechaActualizacionDesc(
+        when(zonaRiesgoRepository.findByEstadoTrueAndUbicacion_IdUbicacionInOrderByNivelRiesgoDescFechaActualizacionDesc(
                 List.of(10)))
                 .thenReturn(List.of(zonaRiesgo));
 
@@ -132,7 +133,7 @@ class RiskZoneMapServiceTest {
                 .contrasena("$2a$10$hash")
                 .fechaRegistro(LocalDate.of(2026, 1, 15))
                 .estado(Boolean.TRUE)
-                .rolIdRol(2)
+                .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
     }
 }

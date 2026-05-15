@@ -2,9 +2,12 @@ package com.upc.av_2.entidades;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -27,8 +30,9 @@ public class ConfiguracionPrivacidad extends EntidadAuditable {
     @Column(name = "ID_Configuracion_Privacidad")
     private Integer idConfiguracionPrivacidad;
 
-    @Column(name = "ID_Usuario", nullable = false, unique = true)
-    private Integer idUsuario;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "ID_Usuario", nullable = false, unique = true)
+    private Usuario usuario;
 
     @Column(name = "Ubicacion_Tiempo_Real", nullable = false)
     private Boolean ubicacionTiempoReal;

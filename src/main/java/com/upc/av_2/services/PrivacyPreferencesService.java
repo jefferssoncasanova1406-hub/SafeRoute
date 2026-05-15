@@ -118,13 +118,13 @@ public class PrivacyPreferencesService {
     }
 
     private ConfiguracionPrivacidad findOrCreateConfiguration(Usuario usuario) {
-        return configuracionPrivacidadRepository.findByIdUsuario(usuario.getIdUsuario())
+        return configuracionPrivacidadRepository.findByUsuario_IdUsuario(usuario.getIdUsuario())
                 .orElseGet(() -> createDefaultConfiguration(usuario));
     }
 
     private ConfiguracionPrivacidad createDefaultConfiguration(Usuario usuario) {
         ConfiguracionPrivacidad configuracionPrivacidad = ConfiguracionPrivacidad.builder()
-                .idUsuario(usuario.getIdUsuario())
+                .usuario(usuario)
                 .ubicacionTiempoReal(DEFAULT_REAL_TIME_LOCATION_ENABLED)
                 .compartirDatosPersonales(DEFAULT_PERSONAL_DATA_SHARING_ENABLED)
                 .fechaActualizacion(LocalDateTime.now())

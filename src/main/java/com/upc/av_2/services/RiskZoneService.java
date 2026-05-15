@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +61,7 @@ public class RiskZoneService {
                 .estado(Boolean.TRUE)
                 .coordenadasGeojson(serializeGeometry(normalizeGeometry(request.getGeometria())))
                 .fechaActualizacion(now)
-                .ubicacionIdUbicacion(ubicacion.getIdUbicacion())
+                .ubicacion(ubicacion)
                 .build();
 
         ZonaRiesgo zonaCreada = zonaRiesgoRepository.save(zonaRiesgo);
@@ -88,7 +87,7 @@ public class RiskZoneService {
         validateRiskZoneRequest(request);
 
         ZonaRiesgo zonaRiesgo = findRiskZoneById(idZona);
-        Ubicacion ubicacion = findUbicacionById(zonaRiesgo.getUbicacionIdUbicacion(), idZona);
+        Ubicacion ubicacion = getRequiredUbicacion(zonaRiesgo, idZona);
 
         zonaRiesgo.setTipo(normalizeText(request.getTipo()).toUpperCase(Locale.ROOT));
         zonaRiesgo.setNivelRiesgo(request.getNivelRiesgo());
@@ -128,7 +127,7 @@ public class RiskZoneService {
         zonaRiesgo.setFechaActualizacion(LocalDateTime.now());
 
         ZonaRiesgo zonaActualizada = zonaRiesgoRepository.save(zonaRiesgo);
-        Ubicacion ubicacion = findUbicacionById(zonaActualizada.getUbicacionIdUbicacion(), idZona);
+        Ubicacion ubicacion = getRequiredUbicacion(zonaActualizada, idZona);
         log.info("Zona de riesgo desactivada zoneId={} adminId={} ubicacionId={}",
                 zonaActualizada.getIdZona(),
                 administrador.getIdUsuario(),
@@ -153,7 +152,7 @@ public class RiskZoneService {
         List<ZonaRiesgo> zonas = findRiskZonesByFilters(estadoFiltro, nivelRiesgo);
         Map<Integer, Ubicacion> ubicaciones = loadUbicaciones(zonas);
         List<RiskZoneDetailDTO> zonasDetalle = zonas.stream()
-                .map(zona -> buildRiskZoneDetail(zona, ubicaciones.get(zona.getUbicacionIdUbicacion())))
+                .map(zona -> buildRiskZoneDetail(zona, ubicaciones.get(zona.getUbicacion().getIdUbicacion())))
                 .collect(Collectors.toList());
 
         log.info("Consulta de zonas de riesgo completada total={} estadoFiltro={} nivelRiesgo={}",
@@ -309,14 +308,14 @@ public class RiskZoneService {
                 });
     }
 
-    private Ubicacion findUbicacionById(Integer idUbicacion, Integer idZona) {
-        return ubicacionRepository.findById(idUbicacion)
-                .orElseThrow(() -> {
-                    log.error("Inconsistencia de datos: ubicacion no encontrada zoneId={} ubicacionId={}",
-                            idZona, idUbicacion);
-                    return new ApplicationConfigurationException(
-                            "No se encontro la ubicacion asociada a la zona de riesgo con id " + idZona);
-                });
+    private Ubicacion getRequiredUbicacion(ZonaRiesgo zonaRiesgo, Integer idZona) {
+        Ubicacion ubicacion = zonaRiesgo.getUbicacion();
+        if (ubicacion == null) {
+            log.error("Inconsistencia de datos: ubicacion no encontrada zoneId={}", idZona);
+            throw new ApplicationConfigurationException(
+                    "No se encontro la ubicacion asociada a la zona de riesgo con id " + idZona);
+        }
+        return ubicacion;
     }
 
     private List<ZonaRiesgo> findRiskZonesByFilters(Boolean estado, Integer nivelRiesgo) {
@@ -334,7 +333,15 @@ public class RiskZoneService {
 
     private Map<Integer, Ubicacion> loadUbicaciones(List<ZonaRiesgo> zonas) {
         List<Integer> ubicacionIds = zonas.stream()
-                .map(ZonaRiesgo::getUbicacionIdUbicacion)
+                .map(zona -> {
+                    Ubicacion ubicacion = zona.getUbicacion();
+                    if (ubicacion == null) {
+                        log.error("Inconsistencia de datos: falta una ubicacion asociada zoneId={}", zona.getIdZona());
+                        throw new ApplicationConfigurationException(
+                                "No se encontro la ubicacion asociada a una zona de riesgo");
+                    }
+                    return ubicacion.getIdUbicacion();
+                })
                 .distinct()
                 .toList();
 

@@ -80,7 +80,7 @@ public class SafeRouteService {
 
         List<SafeRouteRiskZoneDTO> crossedZones = activeZones.stream()
                 .filter(zone -> intersectsRoute(geometry, zone))
-                .map(zone -> buildCrossedZone(zone, locationsById.get(zone.getUbicacionIdUbicacion())))
+                .map(zone -> buildCrossedZone(zone, locationsById.get(zone.getUbicacion().getIdUbicacion())))
                 .sorted(Comparator.comparing(SafeRouteRiskZoneDTO::getNivelRiesgo).reversed()
                         .thenComparing(SafeRouteRiskZoneDTO::getIdZona))
                 .toList();
@@ -97,7 +97,8 @@ public class SafeRouteService {
                 distanceMeters,
                 estimatedTimeMinutes,
                 routeRiskLevel,
-                crossedZones);
+                crossedZones,
+                activeZones);
 
         log.info("Ruta segura calculada email={} rutaId={} distancia={} riesgo={} zonas={}",
                 authenticatedEmail,
@@ -247,7 +248,15 @@ public class SafeRouteService {
 
     private Map<Integer, Ubicacion> loadLocationsById(List<ZonaRiesgo> activeZones) {
         List<Integer> locationIds = activeZones.stream()
-                .map(ZonaRiesgo::getUbicacionIdUbicacion)
+                .map(zone -> {
+                    Ubicacion ubicacion = zone.getUbicacion();
+                    if (ubicacion == null) {
+                        log.error("Inconsistencia de datos: ubicacion faltante para zoneId={}", zone.getIdZona());
+                        throw new ApplicationConfigurationException(
+                                "No se encontro la ubicacion asociada a una zona de riesgo activa");
+                    }
+                    return ubicacion.getIdUbicacion();
+                })
                 .distinct()
                 .toList();
 
@@ -332,7 +341,8 @@ public class SafeRouteService {
             int distanceMeters,
             int estimatedTimeMinutes,
             int routeRiskLevel,
-            List<SafeRouteRiskZoneDTO> crossedZones) {
+            List<SafeRouteRiskZoneDTO> crossedZones,
+            List<ZonaRiesgo> activeZones) {
         Ruta route = Ruta.builder()
                 .origenLatitud(request.getOrigen().getLatitud())
                 .origenLongitud(request.getOrigen().getLongitud())
@@ -343,7 +353,7 @@ public class SafeRouteService {
                 .tiempoEstimadoMinutos(estimatedTimeMinutes)
                 .geometriaGeojson(serializeRouteGeometry(geometry))
                 .fechaCalculo(LocalDateTime.now())
-                .usuarioIdUsuario(usuario.getIdUsuario())
+                .usuario(usuario)
                 .build();
 
         Ruta savedRoute = rutaRepository.save(route);
@@ -351,11 +361,21 @@ public class SafeRouteService {
             List<RutaZona> routeZones = crossedZones.stream()
                     .map(zone -> RutaZona.builder()
                             .id(new RutaZonaId(savedRoute.getIdRuta(), zone.getIdZona()))
+                            .ruta(savedRoute)
+                            .zona(findZoneById(activeZones, zone.getIdZona()))
                             .build())
                     .toList();
             rutaZonaRepository.saveAll(routeZones);
         }
         return savedRoute;
+    }
+
+    private ZonaRiesgo findZoneById(List<ZonaRiesgo> activeZones, Integer zoneId) {
+        return activeZones.stream()
+                .filter(zone -> zone.getIdZona().equals(zoneId))
+                .findFirst()
+                .orElseThrow(() -> new ApplicationConfigurationException(
+                        "No se encontro la zona de riesgo asociada a la ruta calculada"));
     }
 
     private List<String> buildRecommendations(int routeRiskLevel, int crossedZonesCount) {

@@ -2,11 +2,18 @@ package com.upc.av_2.entidades;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,6 +49,17 @@ public class Usuario extends EntidadAuditable {
     @Column(name = "Estado", nullable = false)
     private Boolean estado;
 
-    @Column(name = "Rol_id_rol", nullable = false)
-    private Integer rolIdRol;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "Rol_id_rol", nullable = false)
+    private Rol rol;
+
+    @OneToOne(mappedBy = "usuario", fetch = FetchType.LAZY)
+    private Perfil perfil;
+
+    @OneToOne(mappedBy = "usuario", fetch = FetchType.LAZY)
+    private ConfiguracionPrivacidad configuracionPrivacidad;
+
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Ruta> rutas = new ArrayList<>();
 }
