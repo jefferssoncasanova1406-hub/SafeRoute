@@ -1,12 +1,12 @@
-package com.upc.av_2.controllers;
+﻿package com.upc.grupo3.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.upc.av_2.dtos.RiskZoneDetailDTO;
-import com.upc.av_2.dtos.RiskZoneOperationResponseDTO;
-import com.upc.av_2.services.RiskZoneService;
+import com.upc.grupo3.dtos.riskzone.RiskZoneDetailDTO;
+import com.upc.grupo3.dtos.riskzone.RiskZoneOperationResponseDTO;
+import com.upc.grupo3.services.RiskZoneService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

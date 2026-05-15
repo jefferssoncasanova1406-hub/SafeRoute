@@ -1,20 +1,20 @@
-package com.upc.av_2.services;
+﻿package com.upc.grupo3.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.upc.av_2.dtos.RiskZoneMapRequestDTO;
-import com.upc.av_2.dtos.RiskZoneMapResponseDTO;
-import com.upc.av_2.entidades.Rol;
-import com.upc.av_2.entidades.Ubicacion;
-import com.upc.av_2.entidades.Usuario;
-import com.upc.av_2.entidades.ZonaRiesgo;
-import com.upc.av_2.exceptions.InvalidRiskZoneRequestException;
-import com.upc.av_2.repositories.UbicacionRepository;
-import com.upc.av_2.repositories.UsuarioRepository;
-import com.upc.av_2.repositories.ZonaRiesgoRepository;
+import com.upc.grupo3.dtos.riskzone.RiskZoneMapRequestDTO;
+import com.upc.grupo3.dtos.riskzone.RiskZoneMapResponseDTO;
+import com.upc.grupo3.entidades.Rol;
+import com.upc.grupo3.entidades.Ubicacion;
+import com.upc.grupo3.entidades.Usuario;
+import com.upc.grupo3.entidades.ZonaRiesgo;
+import com.upc.grupo3.exceptions.InvalidRiskZoneRequestException;
+import com.upc.grupo3.repositories.UbicacionRepository;
+import com.upc.grupo3.repositories.UsuarioRepository;
+import com.upc.grupo3.repositories.ZonaRiesgoRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

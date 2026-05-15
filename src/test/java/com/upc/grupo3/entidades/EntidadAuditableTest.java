@@ -1,4 +1,4 @@
-package com.upc.av_2.entidades;
+﻿package com.upc.grupo3.entidades;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

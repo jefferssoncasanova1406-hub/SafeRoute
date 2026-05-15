@@ -1,4 +1,4 @@
-package com.upc.av_2.services;
+﻿package com.upc.grupo3.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,17 +8,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.upc.av_2.dtos.PrivacyPreferencesRequestDTO;
-import com.upc.av_2.dtos.PrivacyPreferencesResponseDTO;
-import com.upc.av_2.entidades.ConfiguracionPrivacidad;
-import com.upc.av_2.entidades.Rol;
-import com.upc.av_2.entidades.Usuario;
-import com.upc.av_2.exceptions.AccountDisabledException;
-import com.upc.av_2.exceptions.InvalidPrivacyPreferencesRequestException;
-import com.upc.av_2.exceptions.LocationPrivacyDisabledException;
-import com.upc.av_2.exceptions.UnauthenticatedUserException;
-import com.upc.av_2.repositories.ConfiguracionPrivacidadRepository;
-import com.upc.av_2.repositories.UsuarioRepository;
+import com.upc.grupo3.dtos.privacy.PrivacyPreferencesRequestDTO;
+import com.upc.grupo3.dtos.privacy.PrivacyPreferencesResponseDTO;
+import com.upc.grupo3.entidades.ConfiguracionPrivacidad;
+import com.upc.grupo3.entidades.Rol;
+import com.upc.grupo3.entidades.Usuario;
+import com.upc.grupo3.exceptions.AccountDisabledException;
+import com.upc.grupo3.exceptions.InvalidPrivacyPreferencesRequestException;
+import com.upc.grupo3.exceptions.LocationPrivacyDisabledException;
+import com.upc.grupo3.exceptions.UnauthenticatedUserException;
+import com.upc.grupo3.repositories.ConfiguracionPrivacidadRepository;
+import com.upc.grupo3.repositories.UsuarioRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;

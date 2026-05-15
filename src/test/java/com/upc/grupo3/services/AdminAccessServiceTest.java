@@ -1,4 +1,4 @@
-package com.upc.av_2.services;
+﻿package com.upc.grupo3.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -6,14 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import com.upc.av_2.dtos.AdminAccessValidationRequestDTO;
-import com.upc.av_2.dtos.AdminAccessValidationResponseDTO;
-import com.upc.av_2.entidades.Rol;
-import com.upc.av_2.entidades.Usuario;
-import com.upc.av_2.exceptions.InvalidAdminAccessRequestException;
-import com.upc.av_2.exceptions.UnauthenticatedUserException;
-import com.upc.av_2.repositories.RolRepository;
-import com.upc.av_2.repositories.UsuarioRepository;
+import com.upc.grupo3.dtos.common.AdminAccessValidationRequestDTO;
+import com.upc.grupo3.dtos.common.AdminAccessValidationResponseDTO;
+import com.upc.grupo3.entidades.Rol;
+import com.upc.grupo3.entidades.Usuario;
+import com.upc.grupo3.exceptions.InvalidAdminAccessRequestException;
+import com.upc.grupo3.exceptions.UnauthenticatedUserException;
+import com.upc.grupo3.repositories.RolRepository;
+import com.upc.grupo3.repositories.UsuarioRepository;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
