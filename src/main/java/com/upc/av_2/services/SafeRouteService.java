@@ -1,7 +1,5 @@
 package com.upc.av_2.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upc.av_2.dtos.RiskZoneGeometryDTO;
 import com.upc.av_2.dtos.RiskZoneLocationDTO;
 import com.upc.av_2.dtos.SafeRouteGeometryDTO;
@@ -46,9 +44,6 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class SafeRouteService {
 
-    private static final int LOW_RISK_LEVEL = 1;
-    private static final int MEDIUM_RISK_LEVEL = 2;
-    private static final int HIGH_RISK_LEVEL = 3;
     private static final double WALKING_SPEED_METERS_PER_MINUTE = 83.3333333333d;
     private static final double EARTH_RADIUS_METERS = 6371000d;
     private static final double EPSILON = 1e-9d;
@@ -58,7 +53,8 @@ public class SafeRouteService {
     private final ZonaRiesgoRepository zonaRiesgoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final UsuarioRepository usuarioRepository;
-    private final ObjectMapper objectMapper;
+    private final GeometryJsonService geometryJsonService;
+    private final RiskLevelCatalog riskLevelCatalog;
 
     @Transactional
     public SafeRouteResponseDTO calculateSafeRoute(
@@ -88,7 +84,7 @@ public class SafeRouteService {
         int routeRiskLevel = crossedZones.stream()
                 .map(SafeRouteRiskZoneDTO::getNivelRiesgo)
                 .max(Integer::compareTo)
-                .orElse(LOW_RISK_LEVEL);
+                .orElse(riskLevelCatalog.defaultLevel());
 
         Ruta savedRoute = persistRoute(
                 usuario,
@@ -115,7 +111,7 @@ public class SafeRouteService {
                 .distanciaMetros(distanceMeters)
                 .tiempoEstimadoMinutos(estimatedTimeMinutes)
                 .nivelRiesgo(routeRiskLevel)
-                .nivelRiesgoNombre(resolveRiskLevelName(routeRiskLevel))
+                .nivelRiesgoNombre(riskLevelCatalog.name(routeRiskLevel))
                 .cruzaZonasRiesgo(!crossedZones.isEmpty())
                 .recomendaciones(buildRecommendations(routeRiskLevel, crossedZones.size()))
                 .geometria(geometry)
@@ -322,8 +318,8 @@ public class SafeRouteService {
                 .idZona(zone.getIdZona())
                 .tipo(zone.getTipo())
                 .nivelRiesgo(zone.getNivelRiesgo())
-                .nivelRiesgoNombre(resolveRiskLevelName(zone.getNivelRiesgo()))
-                .color(resolveRiskLevelColor(zone.getNivelRiesgo()))
+                .nivelRiesgoNombre(riskLevelCatalog.name(zone.getNivelRiesgo()))
+                .color(riskLevelCatalog.color(zone.getNivelRiesgo()))
                 .descripcion(zone.getDescripcion())
                 .centro(RiskZoneLocationDTO.builder()
                         .latitud(location.getLatitud())
@@ -385,51 +381,28 @@ public class SafeRouteService {
         if (crossedZonesCount > 0) {
             recommendations.add("Priorizar vias principales y zonas con mayor iluminacion");
         }
-        if (routeRiskLevel >= MEDIUM_RISK_LEVEL) {
+        if (routeRiskLevel >= RiskLevelCatalog.MEDIUM) {
             recommendations.add("Evitar detenerse en tramos con menor flujo peatonal");
         }
-        if (routeRiskLevel >= HIGH_RISK_LEVEL) {
+        if (routeRiskLevel >= RiskLevelCatalog.HIGH) {
             recommendations.add("Considerar una ruta alternativa o realizar el trayecto acompanado");
         }
         return recommendations;
     }
 
     private RiskZoneGeometryDTO deserializeRiskZoneGeometry(String geometryJson) {
-        try {
-            return objectMapper.readValue(geometryJson, RiskZoneGeometryDTO.class);
-        } catch (JsonProcessingException exception) {
-            log.error("No se pudo deserializar la geometria almacenada de la zona de riesgo", exception);
-            throw new ApplicationConfigurationException(
-                    "No se pudo deserializar la geometria de la zona de riesgo");
-        }
+        return geometryJsonService.read(
+                geometryJson,
+                RiskZoneGeometryDTO.class,
+                "No se pudo deserializar la geometria almacenada de la zona de riesgo",
+                "No se pudo deserializar la geometria de la zona de riesgo");
     }
 
     private String serializeRouteGeometry(SafeRouteGeometryDTO geometry) {
-        try {
-            return objectMapper.writeValueAsString(geometry);
-        } catch (JsonProcessingException exception) {
-            log.error("No se pudo serializar la geometria de la ruta calculada", exception);
-            throw new ApplicationConfigurationException(
-                    "No se pudo serializar la geometria de la ruta calculada");
-        }
-    }
-
-    private String resolveRiskLevelName(Integer riskLevel) {
-        return switch (riskLevel) {
-            case LOW_RISK_LEVEL -> "bajo";
-            case MEDIUM_RISK_LEVEL -> "medio";
-            case HIGH_RISK_LEVEL -> "alto";
-            default -> throw new ApplicationConfigurationException("La ruta contiene un nivel de riesgo no soportado");
-        };
-    }
-
-    private String resolveRiskLevelColor(Integer riskLevel) {
-        return switch (riskLevel) {
-            case LOW_RISK_LEVEL -> "#22C55E";
-            case MEDIUM_RISK_LEVEL -> "#F59E0B";
-            case HIGH_RISK_LEVEL -> "#DC2626";
-            default -> throw new ApplicationConfigurationException("La ruta contiene un nivel de riesgo no soportado");
-        };
+        return geometryJsonService.write(
+                geometry,
+                "No se pudo serializar la geometria de la ruta calculada",
+                "No se pudo serializar la geometria de la ruta calculada");
     }
 
     private GeoPoint toGeoPoint(List<BigDecimal> coordinate) {

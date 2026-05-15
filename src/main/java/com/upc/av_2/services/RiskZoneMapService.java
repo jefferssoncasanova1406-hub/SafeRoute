@@ -1,7 +1,5 @@
 package com.upc.av_2.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upc.av_2.dtos.RiskZoneGeometryDTO;
 import com.upc.av_2.dtos.RiskZoneLocationDTO;
 import com.upc.av_2.dtos.RiskZoneMapLocationDTO;
@@ -34,14 +32,11 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class RiskZoneMapService {
 
-    private static final int LOW_RISK_LEVEL = 1;
-    private static final int MEDIUM_RISK_LEVEL = 2;
-    private static final int HIGH_RISK_LEVEL = 3;
-
     private final ZonaRiesgoRepository zonaRiesgoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final UsuarioRepository usuarioRepository;
-    private final ObjectMapper objectMapper;
+    private final GeometryJsonService geometryJsonService;
+    private final RiskLevelCatalog riskLevelCatalog;
 
     @Transactional(readOnly = true)
     public RiskZoneMapResponseDTO getActiveRiskZonesForMap(
@@ -174,8 +169,8 @@ public class RiskZoneMapService {
                 .idZona(zonaRiesgo.getIdZona())
                 .tipo(zonaRiesgo.getTipo())
                 .nivelRiesgo(zonaRiesgo.getNivelRiesgo())
-                .nivelRiesgoNombre(resolveRiskLevelName(zonaRiesgo.getNivelRiesgo()))
-                .color(resolveRiskLevelColor(zonaRiesgo.getNivelRiesgo()))
+                .nivelRiesgoNombre(riskLevelCatalog.name(zonaRiesgo.getNivelRiesgo()))
+                .color(riskLevelCatalog.color(zonaRiesgo.getNivelRiesgo()))
                 .descripcion(zonaRiesgo.getDescripcion())
                 .fechaActualizacion(zonaRiesgo.getFechaActualizacion())
                 .geometria(deserializeGeometry(zonaRiesgo.getCoordenadasGeojson()))
@@ -188,32 +183,12 @@ public class RiskZoneMapService {
                 .build();
     }
 
-    private String resolveRiskLevelName(Integer nivelRiesgo) {
-        return switch (nivelRiesgo) {
-            case LOW_RISK_LEVEL -> "bajo";
-            case MEDIUM_RISK_LEVEL -> "medio";
-            case HIGH_RISK_LEVEL -> "alto";
-            default -> throw new ApplicationConfigurationException("La zona de riesgo tiene un nivel no soportado");
-        };
-    }
-
-    private String resolveRiskLevelColor(Integer nivelRiesgo) {
-        return switch (nivelRiesgo) {
-            case LOW_RISK_LEVEL -> "#22C55E";
-            case MEDIUM_RISK_LEVEL -> "#F59E0B";
-            case HIGH_RISK_LEVEL -> "#DC2626";
-            default -> throw new ApplicationConfigurationException("La zona de riesgo tiene un nivel no soportado");
-        };
-    }
-
     private RiskZoneGeometryDTO deserializeGeometry(String geometriaJson) {
-        try {
-            return objectMapper.readValue(geometriaJson, RiskZoneGeometryDTO.class);
-        } catch (JsonProcessingException exception) {
-            log.error("No se pudo deserializar la geometria almacenada de la zona de riesgo", exception);
-            throw new ApplicationConfigurationException(
-                    "No se pudo deserializar la geometria de la zona de riesgo");
-        }
+        return geometryJsonService.read(
+                geometriaJson,
+                RiskZoneGeometryDTO.class,
+                "No se pudo deserializar la geometria almacenada de la zona de riesgo",
+                "No se pudo deserializar la geometria de la zona de riesgo");
     }
 
     private String normalizeText(String value) {

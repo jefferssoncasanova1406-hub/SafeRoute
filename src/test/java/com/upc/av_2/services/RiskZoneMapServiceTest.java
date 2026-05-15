@@ -46,7 +46,8 @@ class RiskZoneMapServiceTest {
                 zonaRiesgoRepository,
                 ubicacionRepository,
                 usuarioRepository,
-                new ObjectMapper());
+                new GeometryJsonService(new ObjectMapper()),
+                new RiskLevelCatalog());
     }
 
     @Test
