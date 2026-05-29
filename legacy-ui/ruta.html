@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Crear Ruta</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <img src="assets/images/p1.jpg" alt="Usuario" class="sidebar-avatar" />
+
+    <h2 id="sidebarName">Luis Caminante</h2>
+    <p>Usuario peatonal</p>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="dashboard.html">
+        <i data-lucide="home"></i>
+        <span>Resumen</span>
+      </a>
+
+      <a href="mapa.html">
+        <i data-lucide="globe"></i>
+        <span>Zonas de Riesgo</span>
+      </a>
+
+      <a href="routes.html">
+          <i data-lucide="map-pin"></i>
+          <span>Tus rutas</span>
+        </a>
+
+      <a href="ruta.html" class="active">
+        <i data-lucide="pencil"></i>
+        <span>Crear ruta</span>
+      </a>
+
+      <a href="alerts.html" class="danger">
+        <i data-lucide="bell"></i>
+        <span>Notificaciones</span>
+        <strong id="notifBadge"></strong>
+      </a>
+
+      <a href="reportes.html">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reportes</span>
+      </a>
+    </nav>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="configuracion.html">
+        <i data-lucide="settings"></i>
+        <span>Configuración</span>
+      </a>
+
+      <a href="login.html" class="danger" id="logoutBtn">
+        <i data-lucide="log-out"></i>
+        <span>Salir</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="route-main">
+    <h1>Planea tu ruta</h1>
+
+    <p class="route-description">
+      Aquí se simulan `Ruta`, `Ruta_Zona` e `Historial_Ruta` con sugerencias locales
+      para que la demo sea navegable sin depender de Google Maps.
+    </p>
+
+    <section class="route-card">
+      <form class="route-form">
+        <div class="route-field">
+          <label for="routeOrigin">Origen</label>
+          <input id="routeOrigin" type="text" placeholder="Busca tu punto de partida" />
+          <small>
+            Demo navegable: las coincidencias se simulan localmente y al elegir una se cargan calle,
+            distrito, ciudad y coordenadas.
+          </small>
+        </div>
+
+        <div class="route-field">
+          <label for="routeDestination">Destino</label>
+          <input id="routeDestination" type="text" placeholder="Busca tu destino" />
+          <small>
+            Demo navegable: las coincidencias se simulan localmente y al elegir una se cargan calle,
+            distrito, ciudad y coordenadas.
+          </small>
+        </div>
+
+        <button type="button" class="simulate-route-btn">
+          Simular rutas
+        </button>
+      </form>
+    </section>
+
+    <section id="routeResults" class="route-results hidden">
+      <div class="route-options">
+        <article class="route-option active">
+          <span class="recommended-badge">RECOMENDADA</span>
+          <h2>Ruta recomendada por avenidas</h2>
+          <p>Distancia: 4.8 km</p>
+          <p>Tiempo estimado: 60 min</p>
+          <p>Seguridad: 92/100</p>
+
+          <div class="risk-row">
+            <span>Riesgo Bajo</span>
+            <small>0 zonas relacionadas</small>
+          </div>
+        </article>
+
+        <article class="route-option">
+          <h2>Ruta comercial intermedia</h2>
+          <p>Distancia: 4.3 km</p>
+          <p>Tiempo estimado: 54 min</p>
+          <p>Seguridad: 87/100</p>
+
+          <div class="risk-row">
+            <span>Riesgo Bajo</span>
+            <small>0 zonas relacionadas</small>
+          </div>
+        </article>
+
+        <article class="route-option">
+          <h2>Ruta corta con mayor exposición</h2>
+          <p>Distancia: 3.9 km</p>
+          <p>Tiempo estimado: 49 min</p>
+          <p>Seguridad: 77/100</p>
+
+          <div class="risk-row">
+            <span>Riesgo Bajo</span>
+            <small>0 zonas relacionadas</small>
+          </div>
+        </article>
+      </div>
+
+      <aside class="route-side-summary">
+        <div class="summary-box">
+          <h2>Resumen de seguridad</h2>
+
+          <div>
+            <span>Nivel global</span>
+            <strong>92/100</strong>
+          </div>
+
+          <div>
+            <span>Riesgo estimado</span>
+            <strong>Bajo</strong>
+          </div>
+
+          <div>
+            <span>Zonas relacionadas</span>
+            <strong>0</strong>
+          </div>
+        </div>
+        <div class="actions-box">
+          <h2>Acciones</h2>
+          <button 
+            class="route-secondary-action" 
+            type="button"
+            onclick="window.location.href='route-detail.html'" 
+            >  
+            Guardar en mis rutas
+          </button>
+          <button class="route-primary-action" type="button" id="saveAndStartBtn">  
+            Guardar e iniciar
+          </button>
+        </div>
+      </aside>
+
+      <section class="route-preview">
+        <h2>Vista previa de la ruta elegida</h2>
+
+        <p>
+          La ruta seleccionada se guarda en `Ruta` y sus zonas afectadas se registran en
+          `Ruta_Zona`, pero la visualización es 100% simulada.
+        </p>
+
+        <div class="route-preview-map">
+          <div class="preview-card origin-card">
+            <span>Origen</span>
+            <p id="previewOrigin">Origen seleccionado</p>
+          </div>
+
+          <div class="preview-card destination-card">
+            <span>Destino</span>
+            <p id="previewDestination">Destino seleccionado</p>
+          </div>
+
+          <div class="fake-route-line"></div>
+          <div class="route-point point-a"></div>
+          <div class="route-point point-b"></div>
+
+          <div class="route-preview-info">
+            <div>
+              <h3>Ruta recomendada por avenidas</h3>
+               <p>
+                 Recorrido simulado para demo navegable, sin depender del mapa en tiempo real.
+                </p>
+              </div>
+              <span>Riesgo Bajo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ruta.js"></script>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

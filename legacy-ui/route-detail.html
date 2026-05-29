@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Navegación de ruta</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <img src="assets/images/p1.jpg" alt="Usuario" class="sidebar-avatar" />
+    <h2 id="sidebarName">Luis Caminante</h2>
+    <p>Usuario peatonal</p>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="dashboard.html"><i data-lucide="home"></i><span>Resumen</span></a>
+      <a href="mapa.html"><i data-lucide="globe"></i><span>Zonas de Riesgo</span></a>
+      <a href="routes.html"><i data-lucide="map-pin"></i><span>Tus rutas</span></a>
+      <a href="ruta.html"><i data-lucide="pencil"></i><span>Crear ruta</span></a>
+      <a href="alerts.html" class="danger"><i data-lucide="bell"></i><span>Notificaciones</span><strong id="notifBadge"></strong></a>
+      <a href="reportes.html"><i data-lucide="bar-chart-3"></i><span>Reportes</span></a>
+    </nav>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="configuracion.html"></a><a href="#"><i data-lucide="settings"></i><span>Configuración</span></a>
+      <a href="login.html" class="danger" id="logoutBtn"><i data-lucide="log-out"></i><span>Salir</span></a>
+    </nav>
+  </aside>
+
+  <main class="route-detail-main">
+    <section class="route-detail-panel">
+      <a href="ruta.html" class="back-link">
+        ← Volver
+      </a>
+
+      <h1>Navegación de ruta</h1>
+      <p class="route-detail-name">Ruta recomendada por avenidas</p>
+
+      <p class="route-detail-meta">
+        4.8 km · 60 min estimados
+      </p>
+
+      <div class="precaution-box">
+        <i data-lucide="shield"></i>
+        <div>
+          <span>NIVEL DE PRECAUCIÓN</span>
+          <strong>Riesgo Bajo · Seguridad 92/100</strong>
+        </div>
+      </div>
+
+      <div class="route-summary-box">
+        <h2>Resumen estructural de la ruta</h2>
+        <p><strong>Origen:</strong> Av. Arequipa 2450, Lince, Lima</p>
+        <p><strong>Destino:</strong> Av. Larco 345, Miraflores, Lima</p>
+        <p><strong>Zonas relacionadas:</strong> 0</p>
+      </div>
+
+      <h2>Zonas e incidentes vinculados</h2>
+      <hr />
+
+      <h2>Referencias de navegación</h2>
+
+      <article class="navigation-reference">
+        <h3>Punto de salida</h3>
+        <p>Av. Arequipa 2450, Lince, Lima</p>
+      </article>
+
+      <article class="navigation-reference">
+        <h3>Tramo principal</h3>
+        <p>Mantente en vías iluminadas y revisa las zonas vinculadas antes de avanzar.</p>
+      </article>
+
+      <article class="navigation-reference">
+        <h3>Punto de llegada</h3>
+        <p>Av. Larco 345, Miraflores, Lima</p>
+      </article>
+
+      <button type="button" class="history-btn" id="registerRouteHistoryBtn">
+        Registrar inicio en historial
+      </button>
+
+      <button type="button" class="arrived-btn">
+        <i data-lucide="check-circle"></i>
+        Llegué a mi destino
+      </button>
+    </section>
+
+    <section class="route-detail-map">
+        <div id="navigationMap"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script> lucide.createIcons();
+  const navigationMap = L.map("navigationMap", {
+    zoomControl: true}).setView([-12.095, -77.032], 13);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
+  }).addTo(navigationMap);
+
+  const routePoints = [
+    [-12.0852, -77.0336],
+    [-12.0935, -77.0315],
+    [-12.1050, -77.0306],
+    [-12.1219, -77.0297]
+  ];
+
+  L.polyline(routePoints, {
+    color: "#22c55e",
+    weight: 7,
+    opacity: 0.9
+  }).addTo(navigationMap);
+
+  L.marker(routePoints[0]).addTo(navigationMap).bindPopup("Origen");
+  L.marker(routePoints[routePoints.length - 1]).addTo(navigationMap).bindPopup("Destino");
+
+  navigationMap.fitBounds(routePoints, {
+  padding: [50, 50]
+  });
+  
+  setTimeout(() => {
+  navigationMap.invalidateSize();
+  }, 200);
+
+  const registerRouteHistoryBtn = document.getElementById("registerRouteHistoryBtn");
+
+  if (registerRouteHistoryBtn) {
+  registerRouteHistoryBtn.addEventListener("click", () => {
+    const savedRoutes = JSON.parse(localStorage.getItem("saferoute_saved_routes")) || [];
+
+    const newRoute = {
+      name: "Ruta recomendada por avenidas",
+      origin: "Av. Arequipa 2450, Lince, Lima",
+      destination: "Av. Larco 345, Miraflores, Lima",
+      security: "92/100",
+      distance: "4.8 km",
+      time: "60 min",
+      risk: "Riesgo Bajo",
+      createdAt: new Date().toLocaleString("es-PE", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      })
+    };
+
+    savedRoutes.unshift(newRoute);
+    localStorage.setItem("saferoute_saved_routes", JSON.stringify(savedRoutes));
+
+    window.location.href = "routes.html";
+  });
+  }
+  </script>
+</body>
+</html>

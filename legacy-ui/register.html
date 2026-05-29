@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Registro</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="auth-page">
+  <main class="auth-wrapper">
+    <section class="auth-card register-card">
+      <img src="assets/images/logo.svg" alt="SafeRoute" class="auth-logo" />
+
+      <h1>Crear cuenta</h1>
+      <p class="auth-subtitle">
+        Este formulario crea un `Usuario` y su `Perfil` inicial dentro de la simulación.
+      </p>
+
+      <form id="registerForm" class="auth-form">
+        <label>
+          Nombre completo
+          <input id="registerName" type="text" placeholder="Ej. Lucía Torres" required />
+        </label>
+
+        <label>
+          Correo electrónico
+          <input id="registerEmail" type="email" placeholder="tu-correo@ejemplo.com" required />
+        </label>
+
+        <div class="form-row">
+          <label>
+            Contraseña
+            <input id="registerPassword" type="password" placeholder="Mínimo 6 caracteres" required />
+          </label>
+
+          <label>
+            Repite contraseña
+            <div class="password-field">
+              <input id="registerPassword2" type="password" placeholder="Repite tu contraseña" required />
+            </div>
+          </label>
+        </div>
+
+        <button type="submit">Registrarme</button>
+      </form>
+
+      <p class="auth-link">
+        ¿Ya tienes cuenta?
+        <a href="login.html">Inicia sesión</a>
+      </p>
+    </section>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
