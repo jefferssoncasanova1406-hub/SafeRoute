@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Login</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="auth-page">
+  <main class="auth-wrapper">
+    <section class="auth-card">
+      <img src="assets/images/logo.svg" alt="SafeRoute" class="auth-logo" />
+
+      <h1>SafeRoute</h1>
+      <p class="auth-subtitle">
+        Inicia sesión con la simulación de `Usuario` y `Perfil`.
+      </p>
+
+      <div class="demo-box">
+        <strong>Credenciales demo</strong>
+        <p>Usuario: `luis@saferoute.pe` / `123456`</p>
+        <p>Admin: `admin@saferoute.pe` / `admin123`</p>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <label>
+          Correo electrónico
+          <input id="loginEmail" type="email" placeholder="Ej. usuario@correo.com" required />
+        </label>
+
+        <label>
+          Contraseña
+            <input id="loginPassword" type="password" placeholder="••••••••" required />
+        </label>
+
+        <button type="submit">Ingresar</button>
+      </form>
+
+      <p class="auth-link">
+        ¿No tienes una cuenta?
+        <a href="register.html">Regístrate aquí</a>
+      </p>
+    </section>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

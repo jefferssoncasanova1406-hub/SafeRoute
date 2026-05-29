@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Configuración</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <img src="assets/images/p1.jpg" alt="Usuario" class="sidebar-avatar" />
+
+    <h2 id="sidebarName">Luis Caminante</h2>
+    <p>Usuario peatonal</p>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="dashboard.html">
+        <i data-lucide="home"></i>
+        <span>Resumen</span>
+      </a>
+
+      <a href="mapa.html">
+        <i data-lucide="globe"></i>
+        <span>Zonas de Riesgo</span>
+      </a>
+
+      <a href="routes.html">
+        <i data-lucide="map-pin"></i>
+        <span>Tus rutas</span>
+      </a>
+
+      <a href="ruta.html">
+        <i data-lucide="pencil"></i>
+        <span>Crear ruta</span>
+      </a>
+
+      <a href="alerts.html" class="danger">
+        <i data-lucide="bell"></i>
+        <span>Notificaciones</span>
+        <strong id="notifBadge"></strong>
+      </a>
+
+      <a href="reportes.html">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reportes</span>
+      </a>
+    </nav>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="configuracion.html" class="active">
+        <i data-lucide="settings"></i>
+        <span>Configuración</span>
+      </a>
+
+      <a href="login.html" class="danger" id="logoutBtn">
+        <i data-lucide="log-out"></i>
+        <span>Salir</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="config-main">
+    <h1>Configuración de perfil</h1>
+
+    <p class="config-description">
+      Esta pantalla se alinea con la tabla `Perfil`: preferencia de riesgo, radio de alerta y notificaciones activas.
+    </p>
+
+    <section class="config-card">
+      <h2>Preferencias de riesgo</h2>
+
+      <label for="riskPreference">Nivel máximo de riesgo aceptado</label>
+
+      <select id="riskPreference">
+        <option>Medio</option>
+        <option>Bajo</option>
+        <option>Alto</option>
+      </select>
+
+      <p>Se usa para priorizar rutas y filtrar qué tan expuesto puede estar un trayecto.</p>
+    </section>
+
+    <section class="config-card">
+      <h2>Radio de alerta</h2>
+
+      <label for="alertRadius">
+        Distancia máxima para recibir notificaciones:
+        <span id="alertRadiusValue">1200</span> metros
+      </label>
+
+      <input id="alertRadius" type="range" min="200" max="3000" step="100" value="1200" />
+
+      <p>Equivale al campo `Radio_Alerta` del perfil del usuario.</p>
+    </section>
+
+    <section class="config-card">
+      <h2>Notificaciones</h2>
+
+      <label class="config-checkbox">
+        <input id="notificationsEnabled" type="checkbox" checked />
+        Activar notificaciones de incidentes
+      </label>
+
+      <p>Este valor se corresponde con `Notificaciones_Acti`.</p>
+    </section>
+
+    <button type="button" class="config-save-btn" id="saveConfigBtn">
+      Guardar cambios
+    </button>
+
+    <p id="configMessage" class="config-message hidden">
+      Perfil actualizado dentro de la simulación.
+    </p>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/configuracion.js"></script>
+
+  <script>
+    lucide.createIcons();
+
+    const alertRadius = document.getElementById("alertRadius");
+    const alertRadiusValue = document.getElementById("alertRadiusValue");
+
+    if (alertRadius && alertRadiusValue) {
+      alertRadius.addEventListener("input", () => {
+        alertRadiusValue.textContent = alertRadius.value;
+      });
+    }
+  </script>
+</body>
+</html>

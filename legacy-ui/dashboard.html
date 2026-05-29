@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <img src="assets/images/p1.jpg" alt="Usuario" class="sidebar-avatar" />
+
+    <h2 id="sidebarName">Luis Caminante</h2>
+    <p>Usuario peatonal</p>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+    <a href="dashboard.html" class="active">
+    <i data-lucide="home"></i>
+    <span>Resumen</span>
+    </a>
+    
+    <a href="mapa.html">
+      <i data-lucide="globe"></i>
+      <span>Zonas de Riesgo</span>
+    </a>
+    
+    <a href="routes.html">
+      <i data-lucide="map-pin"></i>
+      <span>Tus rutas</span>
+    </a>
+    
+    <a href="ruta.html">
+    <i data-lucide="pencil"></i>
+    <span>Crear ruta</span>
+    </a>
+    
+    <a href="alerts.html" class="danger">
+    <i data-lucide="bell"></i>
+    <span>Notificaciones</span>
+    <strong id="notifBadge"></strong>
+    </a>
+    
+    <a href="reportes.html">
+    <i data-lucide="bar-chart-3"></i>
+    <span>Reportes</span>
+    </a>
+    </nav>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+    <a href="configuracion.html">
+    <i data-lucide="settings"></i>
+    <span>Configuración</span>
+    </a>
+    
+    <a href="login.html" class="danger" id="logoutBtn">
+    <i data-lucide="log-out"></i>
+    <span>Salir</span>
+    </a>
+    </nav>
+
+  </aside>
+
+  <main class="dashboard-main">
+    <section class="summary-card">
+      <h1>Resumen de SafeRoute</h1>
+      <p id="welcomeText">
+        Hola, Luis Caminante. Esta vista resume la simulación del modelo Usuario, Perfil, Reporte,
+        Incidente, Ruta y Notificaciones.
+      </p>
+
+      <div class="summary-grid">
+          <div>
+            <span>Preferencia de riesgo</span>
+            <strong id="summaryRiskPreference">Medio</strong>
+          </div>
+
+          <div>
+            <span>Radio de alerta</span>
+            <strong id="summaryAlertRadius">1200 m</strong>
+          </div>
+
+          <div>
+            <span>Notificaciones</span>
+            <strong id="summaryNotificationsStatus">Activadas</strong>
+          </div>
+      </div>
+
+    </section>
+    <section class="stats-grid">
+    <article>
+    <p>Notificaciones activas</p>
+    <strong id="statNotifications">2</strong>
+    <span class="icon blue">
+      <i data-lucide="bell"></i>
+    </span>
+    </article>
+    
+    <article>
+    <p>Rutas guardadas</p>
+    <strong id="statRoutes">2</strong>
+    <span class="icon green">
+      <i data-lucide="map"></i>
+    </span> 
+    </article>
+    
+    <article>
+    <p>Tus reportes</p>
+    <strong id="statReports">3</strong>
+    <span class="icon orange">
+      <i data-lucide="flag"></i>
+    </span> 
+    </article>
+    
+    <article>
+    <p>Incidentes visibles</p>
+    <strong>3</strong>
+    <span class="icon red">
+      <i data-lucide="shield"></i>
+    </span>
+    </article>
+    </section>
+
+    <section class="dashboard-content">
+      <div class="panel incidents-panel">
+        <div class="panel-header">
+          <h2>Incidentes validados</h2>
+          <a href="mapa.html">Ver mapa completo</a>
+        </div>
+
+        <article class="incident-item">
+          <h3>Robo reportado</h3>
+          <p>
+            Se reportó un arrebato en el paradero. Se recomienda evitar la esquina durante la hora punta.
+          </p>
+          <small>17 abr. 2026, 9:10 a. m.</small>
+        </article>
+
+        <article class="incident-item">
+          <h3>Iluminación defectuosa</h3>
+          <p>
+            Faroles apagados en la zona central del parque, lo que reduce la visibilidad peatonal.
+          </p>
+          <small>17 abr. 2026, 7:50 a. m.</small>
+        </article>
+
+        <article class="incident-item">
+          <h3>Actividad sospechosa</h3>
+          <p>
+            Se detectó presencia sospechosa cerca de comercios cerrados. Conviene transitar en grupo.
+          </p>
+          <small>16 abr. 2026, 9:15 p. m.</small>
+        </article>
+      </div>
+
+      <div class="right-column">
+        <div class="panel notifications-panel">
+          <div class="panel-header">
+            <h2>Tus últimas notificaciones</h2>
+            <a href="alerts.html">Abrir centro</a>
+          </div>
+
+          <article class="notification-item active">
+            <p>Nuevo incidente validado cerca de San Isidro dentro de tu radio de alerta.</p>
+            <small>17 abr. 2026, 9:15 a. m.</small>
+          </article>
+
+          <article class="notification-item">
+            <p>Iluminación defectuosa registrada en Miraflores. Revisa rutas alternativas.</p>
+            <small>17 abr. 2026, 7:50 a. m.</small>
+          </article>
+
+          <article class="notification-item active">
+            <p>Actividad sospechosa detectada en el centro. Mantén precaución.</p>
+            <small>16 abr. 2026, 9:20 p. m.</small>
+          </article>
+        </div>
+
+        <div class="panel next-step-panel">
+          <h2>Siguiente paso</h2>
+          <p>
+              Puedes crear una ruta con autocompletado de direcciones,
+              revisar el estado de tus reportes o ajustar tu perfil para que
+              coincida con la tabla `Perfil`.
+          </p>
+          
+          <button class="next-primary-btn" type="button" onclick="window.location.href='ruta.html'">
+            Crear ruta
+          </button>
+
+           <button 
+             class="next-secondary-btn" 
+             type="button" 
+             onclick="window.location.href='reportes.html'"
+             >
+             Revisar reportes
+            </button>
+          </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+  lucide.createIcons();
+  </script>
+  
+</body>
+</html>

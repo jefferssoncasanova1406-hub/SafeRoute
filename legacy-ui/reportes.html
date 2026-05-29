@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Reportes</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <img src="assets/images/p1.jpg" alt="Usuario" class="sidebar-avatar" />
+
+    <h2 id="sidebarName">Luis Caminante</h2>
+    <p>Usuario peatonal</p>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="dashboard.html">
+        <i data-lucide="home"></i>
+        <span>Resumen</span>
+      </a>
+
+      <a href="mapa.html">
+        <i data-lucide="globe"></i>
+        <span>Zonas de Riesgo</span>
+      </a>
+
+      <a href="routes.html">
+        <i data-lucide="map-pin"></i>
+        <span>Tus rutas</span>
+      </a>
+
+      <a href="ruta.html">
+        <i data-lucide="pencil"></i>
+        <span>Crear ruta</span>
+      </a>
+
+      <a href="alerts.html" class="danger">
+        <i data-lucide="bell"></i>
+        <span>Notificaciones</span>
+        <strong id="notifBadge"></strong>
+      </a>
+
+      <a href="reportes.html" class="active">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reportes</span>
+      </a>
+    </nav>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="configuracion.html">
+        <i data-lucide="settings"></i>
+        <span>Configuración</span>
+      </a>
+
+      <a href="login.html" class="danger" id="logoutBtn">
+        <i data-lucide="log-out"></i>
+        <span>Salir</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="reports-main">
+    <section class="reports-hero">
+      <div>
+        <h1>
+          <i data-lucide="alert-triangle"></i>
+          Gestión de reportes
+        </h1>
+
+        <p>
+          Esta vista refleja la tabla Reporte y su relación con Incidente,
+          Ubicación y validación.
+        </p>
+      </div>
+
+      <button type="button" class="create-report-btn" id="openReportModalBtn">
+        + Crear nuevo reporte
+      </button>
+    </section>
+
+    <section class="reports-section">
+      <h2>Tus reportes</h2>
+
+      <div class="reports-grid" id="reportsGrid">
+        <article class="report-card">
+          <div class="report-top">
+            <span class="status validado">VALIDADO</span>
+            <small>17 abr. 2026, 9:00 a. m.</small>
+          </div>
+
+          <h3>Robo reportado</h3>
+
+          <p class="report-location">
+            <i data-lucide="map-pin"></i>
+            Cruce Av. Javier Prado con Arequipa
+          </p>
+
+          <div class="report-meta">
+            <span>Riesgo Bajo</span>
+            <span>
+              <i data-lucide="clock"></i>
+              17 abr. 2026, 9:10 a. m.
+            </span>
+          </div>
+
+          <p class="report-description">
+            Arrebato en paradero con dos personas huyendo hacia Arequipa.
+          </p>
+        </article>
+
+        <article class="report-card">
+          <div class="report-top">
+            <span class="status validado">VALIDADO</span>
+            <small>17 abr. 2026, 7:30 a. m.</small>
+          </div>
+
+          <h3>Iluminación defectuosa</h3>
+
+          <p class="report-location">
+            <i data-lucide="map-pin"></i>
+            Parque Kennedy
+          </p>
+
+          <div class="report-meta">
+            <span>Riesgo Bajo</span>
+            <span>
+              <i data-lucide="clock"></i>
+              17 abr. 2026, 7:45 a. m.
+            </span>
+          </div>
+
+          <p class="report-description">
+            Parque con alumbrado apagado en el lado norte.
+          </p>
+        </article>
+
+        <article class="report-card">
+          <div class="report-top">
+            <span class="status rechazado">RECHAZADO</span>
+            <small>16 abr. 2026, 6:10 p. m.</small>
+          </div>
+
+          <h3>Vía bloqueada</h3>
+
+          <p class="report-location">
+            <i data-lucide="map-pin"></i>
+            Av. Grau Cdra 5
+          </p>
+
+          <div class="report-meta">
+            <span>Riesgo Alto</span>
+            <span>
+              <i data-lucide="clock"></i>
+              16 abr. 2026, 6:30 p. m.
+            </span>
+          </div>
+
+          <p class="report-description">
+            Cruce peatonal bloqueado por choque. Tránsito desordenado.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/reportes.js"></script>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

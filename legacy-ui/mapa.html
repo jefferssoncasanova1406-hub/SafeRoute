@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute - Zonas de Riesgo</title>
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+
+<body class="dashboard-page">
+  <aside class="sidebar">
+    <img src="assets/images/p1.jpg" alt="Usuario" class="sidebar-avatar" />
+    <h2 id="sidebarName">Luis Caminante</h2>
+    <p>Usuario peatonal</p>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="dashboard.html">
+        <i data-lucide="home"></i>
+        <span>Resumen</span>
+      </a>
+
+      <a href="mapa.html" class="active">
+        <i data-lucide="globe"></i>
+        <span>Zonas de Riesgo</span>
+      </a>
+
+      <a href="routes.html">
+          <i data-lucide="map-pin"></i>
+          <span>Tus rutas</span>
+        </a>
+
+      <a href="ruta.html">
+        <i data-lucide="pencil"></i>
+        <span>Crear ruta</span>
+      </a>
+
+      <a href="alerts.html" class="danger">
+        <i data-lucide="bell"></i>
+        <span>Notificaciones</span>
+        <strong id="notifBadge"></strong>
+      </a>
+
+      <a href="reportes.html">
+         <i data-lucide="bar-chart-3"></i>
+         <span>Reportes</span>
+        </a>
+    </nav>
+
+    <hr />
+
+    <nav class="sidebar-menu">
+      <a href="configuracion.html">
+        <i data-lucide="settings"></i>
+        <span>Configuración</span>
+      </a>
+
+      <a href="login.html" class="danger" id="logoutBtn">
+        <i data-lucide="log-out"></i>
+        <span>Salir</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="risk-map-layout">
+    <section class="risk-panel">
+      <h1>Mapa de zonas de riesgo</h1>
+      <p>
+        Esta vista usa `Zona_Riesgo`, `Ubicacion` e `Incidente`
+        para simular el comportamiento de la app.
+      </p>
+
+      <article class="risk-card">
+        <h2>
+          <span class="risk-dot high"></span>
+          Riesgo Alto
+        </h2>
+
+        <p>
+          Alta incidencia de arrebatos y hurtos a peatones durante horas punta.
+        </p>
+
+        <div class="risk-reference">
+          <span>Referencia</span>
+          <strong>Av. Nicolás de Piérola</strong>
+          <p>Cercado de Lima, Lima</p>
+        </div>
+
+        <div class="risk-info-grid">
+          <div>
+            <span>Actualización</span>
+            <strong>2026-04-17</strong>
+          </div>
+
+          <div>
+            <span>Incidentes</span>
+            <strong>0</strong>
+          </div>
+        </div>
+      </article>
+
+      <div class="risk-legend">
+        <h3>Leyenda</h3>
+
+        <p><span class="legend-color high"></span> Alto riesgo</p>
+        <p><span class="legend-color medium"></span> Riesgo medio</p>
+        <p><span class="legend-color low"></span> Bajo riesgo</p>
+      </div>
+
+      <div class="risk-actions">
+        <button type="button" class="dark-action-btn" id="openReportModalBtn">
+          + Reportar incidente
+        </button>
+        <button 
+        type="button" 
+        class="blue-action-btn" 
+        onclick="window.location.href='ruta.html'"
+        >
+          Planificar ruta segura
+        </button>
+      </div>
+    </section>
+
+    <section class="real-map-container">
+      <div id="riskMap"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/reportes.js"></script>
+
+  <script>
+    lucide.createIcons();
+
+    const map = L.map("riskMap", {
+      zoomControl: true
+    }).setView([-12.0464, -77.0428], 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    const zonasRiesgo = [
+      {
+        nivel: 85,
+        color: "#ef4444",
+        lat: -12.055,
+        lng: -77.04,
+        radio: 1200,
+        nombre: "Av. Nicolás de Piérola"
+      },
+      {
+        nivel: 70,
+        color: "#ef4444",
+        lat: -12.03,
+        lng: -77.06,
+        radio: 1000,
+        nombre: "Av. Arica"
+      },
+      {
+        nivel: 35,
+        color: "#22c55e",
+        lat: -12.09,
+        lng: -77.02,
+        radio: 1500,
+        nombre: "Av. San Borja Sur"
+      }
+    ];
+
+    const incidentes = [
+      { lat: -12.0886, lng: -77.0326, titulo: "Robo reportado" },
+      { lat: -12.1215, lng: -77.0305, titulo: "Iluminación defectuosa" },
+      { lat: -12.0464, lng: -77.0329, titulo: "Actividad sospechosa" }
+    ];
+
+    zonasRiesgo.forEach((zona) => {
+      L.circle([zona.lat, zona.lng], {
+        radius: zona.radio,
+        color: zona.color,
+        fillColor: zona.color,
+        fillOpacity: 0.35,
+        weight: 2
+      })
+      .addTo(map)
+      .bindPopup(`<strong>${zona.nombre}</strong><br>Nivel de riesgo: ${zona.nivel}`);
+    });
+
+    incidentes.forEach((incidente) => {
+      L.marker([incidente.lat, incidente.lng])
+        .addTo(map)
+        .bindPopup(`<strong>${incidente.titulo}</strong>`);
+    });
+  </script>
+</body>
+</html>
