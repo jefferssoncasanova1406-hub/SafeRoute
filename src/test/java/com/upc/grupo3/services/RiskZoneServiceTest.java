@@ -1,4 +1,4 @@
-﻿package com.upc.grupo3.services;
+package com.upc.grupo3.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,8 +55,7 @@ class RiskZoneServiceTest {
                 zonaRiesgoRepository,
                 ubicacionRepository,
                 usuarioRepository,
-                new GeometryJsonService(new ObjectMapper()),
-                new RiskLevelCatalog());
+                new ObjectMapper());
     }
 
     @Test

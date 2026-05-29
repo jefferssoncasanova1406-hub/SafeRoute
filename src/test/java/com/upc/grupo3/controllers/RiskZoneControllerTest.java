@@ -1,4 +1,4 @@
-﻿package com.upc.grupo3.controllers;
+package com.upc.grupo3.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;

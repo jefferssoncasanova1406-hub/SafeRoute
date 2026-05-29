@@ -1,4 +1,4 @@
-﻿package com.upc.grupo3.services;
+package com.upc.grupo3.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
