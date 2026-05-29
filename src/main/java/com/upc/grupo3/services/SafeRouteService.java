@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upc.grupo3.dtos.riskzone.RiskZoneGeometryDTO;
 import com.upc.grupo3.dtos.riskzone.RiskZoneLocationDTO;
 import com.upc.grupo3.dtos.saferoute.SafeRouteGeometryDTO;
+import com.upc.grupo3.dtos.saferoute.SafeRouteOptionDTO;
 import com.upc.grupo3.dtos.saferoute.SafeRoutePointDTO;
 import com.upc.grupo3.dtos.saferoute.SafeRouteRequestDTO;
 import com.upc.grupo3.dtos.saferoute.SafeRouteResponseDTO;
@@ -49,9 +50,13 @@ public class SafeRouteService {
     private static final int LOW_RISK_LEVEL = 1;
     private static final int MEDIUM_RISK_LEVEL = 2;
     private static final int HIGH_RISK_LEVEL = 3;
+    private static final int LOW_RISK_SCORE = 10;
+    private static final int MEDIUM_RISK_SCORE = 45;
+    private static final int HIGH_RISK_SCORE = 80;
     private static final double WALKING_SPEED_METERS_PER_MINUTE = 83.3333333333d;
     private static final double EARTH_RADIUS_METERS = 6371000d;
     private static final double EPSILON = 1e-9d;
+    private static final BigDecimal COORDINATE_MARGIN = new BigDecimal("0.0015000");
 
     private final RutaRepository rutaRepository;
     private final RutaZonaRepository rutaZonaRepository;
@@ -68,16 +73,252 @@ public class SafeRouteService {
         SafeRouteRequestDTO normalizedRequest = normalizeAndValidateRequest(request);
         validateGeographicDataAvailability();
 
-        SafeRouteGeometryDTO geometry = buildRouteGeometry(normalizedRequest);
-        int distanceMeters = calculateDistanceInMeters(
-                normalizedRequest.getOrigen(),
-                normalizedRequest.getDestino());
-        int estimatedTimeMinutes = Math.max(1, (int) Math.ceil(distanceMeters / WALKING_SPEED_METERS_PER_MINUTE));
-
         List<ZonaRiesgo> activeZones = zonaRiesgoRepository
                 .findByEstadoTrueOrderByNivelRiesgoDescFechaActualizacionDesc();
         Map<Integer, Ubicacion> locationsById = loadLocationsById(activeZones);
 
+        RouteAlternative fastestRoute = evaluateRoute(
+                buildDirectGeometry(normalizedRequest),
+                activeZones,
+                locationsById);
+        RouteAlternative safestRoute = buildSafestRoute(
+                normalizedRequest,
+                activeZones,
+                locationsById,
+                fastestRoute);
+        RouteAlternative recommendedRoute = selectRecommendedRoute(fastestRoute, safestRoute);
+
+        SafeRouteResponseDTO response = buildResponse(
+                normalizedRequest,
+                fastestRoute,
+                safestRoute,
+                recommendedRoute,
+                buildRecommendation(fastestRoute, safestRoute, recommendedRoute));
+
+        Ruta savedRoute = persistRoute(
+                usuario,
+                normalizedRequest,
+                recommendedRoute,
+                response,
+                activeZones);
+
+        log.info("Rutas calculadas email={} rutaId={} scoreRapida={} scoreSegura={} scoreRecomendada={}",
+                authenticatedEmail,
+                savedRoute.getIdRuta(),
+                fastestRoute.scoreRiesgo(),
+                safestRoute.scoreRiesgo(),
+                recommendedRoute.scoreRiesgo());
+
+        return response;
+    }
+
+    private SafeRouteResponseDTO buildResponse(
+            SafeRouteRequestDTO normalizedRequest,
+            RouteAlternative fastestRoute,
+            RouteAlternative safestRoute,
+            RouteAlternative recommendedRoute,
+            String recommendation) {
+        return SafeRouteResponseDTO.builder()
+                .origen(normalizedRequest.getOrigen())
+                .destino(normalizedRequest.getDestino())
+                .rutaMasRapida(toRouteOption(fastestRoute))
+                .rutaMasSegura(toRouteOption(safestRoute))
+                .rutaRecomendada(toRouteOption(recommendedRoute))
+                .nivelRiesgo(resolveRiskLevelName(recommendedRoute.nivelRiesgo()))
+                .scoreRiesgo(recommendedRoute.scoreRiesgo())
+                .tiempoEstimado(recommendedRoute.tiempoEstimado())
+                .distancia(recommendedRoute.distancia())
+                .recomendacion(recommendation)
+                .build();
+    }
+
+    private SafeRouteOptionDTO toRouteOption(RouteAlternative routeAlternative) {
+        return SafeRouteOptionDTO.builder()
+                .distancia(routeAlternative.distancia())
+                .tiempoEstimado(routeAlternative.tiempoEstimado())
+                .scoreRiesgo(routeAlternative.scoreRiesgo())
+                .nivelRiesgo(resolveRiskLevelName(routeAlternative.nivelRiesgo()))
+                .cruzaZonasRiesgo(!routeAlternative.zonasRiesgo().isEmpty())
+                .geometria(routeAlternative.geometria())
+                .zonasRiesgo(routeAlternative.zonasRiesgo())
+                .build();
+    }
+
+    private RouteAlternative buildSafestRoute(
+            SafeRouteRequestDTO request,
+            List<ZonaRiesgo> activeZones,
+            Map<Integer, Ubicacion> locationsById,
+            RouteAlternative fastestRoute) {
+        if (fastestRoute.zonasRiesgo().isEmpty()) {
+            return fastestRoute;
+        }
+
+        RouteAlternative bestCandidate = fastestRoute;
+        for (SafeRouteGeometryDTO candidateGeometry : buildDetourCandidates(request, activeZones, fastestRoute)) {
+            RouteAlternative candidate = evaluateRoute(candidateGeometry, activeZones, locationsById);
+            if (isBetterSafeCandidate(candidate, bestCandidate)) {
+                bestCandidate = candidate;
+            }
+        }
+        return bestCandidate;
+    }
+
+    private boolean isBetterSafeCandidate(RouteAlternative candidate, RouteAlternative currentBest) {
+        if (candidate.scoreRiesgo() != currentBest.scoreRiesgo()) {
+            return candidate.scoreRiesgo() < currentBest.scoreRiesgo();
+        }
+        if (candidate.tiempoEstimado() != currentBest.tiempoEstimado()) {
+            return candidate.tiempoEstimado() < currentBest.tiempoEstimado();
+        }
+        if (candidate.distancia() != currentBest.distancia()) {
+            return candidate.distancia() < currentBest.distancia();
+        }
+        return candidate.geometria().getCoordinates().size() < currentBest.geometria().getCoordinates().size();
+    }
+
+    private List<SafeRouteGeometryDTO> buildDetourCandidates(
+            SafeRouteRequestDTO request,
+            List<ZonaRiesgo> activeZones,
+            RouteAlternative fastestRoute) {
+        Map<Integer, ZonaRiesgo> zonesById = new HashMap<>();
+        activeZones.forEach(zone -> zonesById.put(zone.getIdZona(), zone));
+
+        GeoPoint origin = toGeoPoint(List.of(
+                request.getOrigen().getLongitud(),
+                request.getOrigen().getLatitud()));
+        GeoPoint destination = toGeoPoint(List.of(
+                request.getDestino().getLongitud(),
+                request.getDestino().getLatitud()));
+        double routeDx = destination.longitude - origin.longitude;
+        double routeDy = destination.latitude - origin.latitude;
+        double routeLength = Math.max(Math.sqrt(routeDx * routeDx + routeDy * routeDy), EPSILON);
+
+        List<ZoneShape> crossedZoneShapes = fastestRoute.zonasRiesgo().stream()
+                .map(zone -> {
+                    ZonaRiesgo riskZone = zonesById.get(zone.getIdZona());
+                    if (riskZone == null) {
+                        throw new ApplicationConfigurationException(
+                                "No se encontro la zona de riesgo asociada a la alternativa calculada");
+                    }
+                    return buildZoneShape(riskZone, origin, routeDx, routeDy, routeLength);
+                })
+                .sorted(Comparator.comparingDouble(ZoneShape::projection))
+                .toList();
+
+        List<SafeRouteGeometryDTO> candidates = new ArrayList<>();
+        for (int direction : List.of(1, -1)) {
+            for (int multiplier : List.of(1, 2, 3, 4)) {
+                List<List<BigDecimal>> coordinates = new ArrayList<>();
+                coordinates.add(toCoordinate(origin.longitude, origin.latitude));
+                for (ZoneShape zoneShape : crossedZoneShapes) {
+                    GeoPoint detourPoint = buildDetourPoint(
+                            origin,
+                            destination,
+                            zoneShape,
+                            direction,
+                            multiplier);
+                    appendCoordinateIfNeeded(coordinates, toCoordinate(detourPoint.longitude, detourPoint.latitude));
+                }
+                appendCoordinateIfNeeded(coordinates, toCoordinate(destination.longitude, destination.latitude));
+                candidates.add(SafeRouteGeometryDTO.builder()
+                        .type("LineString")
+                        .coordinates(coordinates)
+                        .build());
+            }
+        }
+        return candidates;
+    }
+
+    private void appendCoordinateIfNeeded(List<List<BigDecimal>> coordinates, List<BigDecimal> candidate) {
+        if (coordinates.isEmpty()) {
+            coordinates.add(candidate);
+            return;
+        }
+
+        List<BigDecimal> last = coordinates.get(coordinates.size() - 1);
+        if (last.get(0).compareTo(candidate.get(0)) == 0 && last.get(1).compareTo(candidate.get(1)) == 0) {
+            return;
+        }
+        coordinates.add(candidate);
+    }
+
+    private GeoPoint buildDetourPoint(
+            GeoPoint origin,
+            GeoPoint destination,
+            ZoneShape zoneShape,
+            int direction,
+            int multiplier) {
+        double routeDx = destination.longitude - origin.longitude;
+        double routeDy = destination.latitude - origin.latitude;
+        double routeLength = Math.max(Math.sqrt(routeDx * routeDx + routeDy * routeDy), EPSILON);
+        double perpendicularX = -routeDy / routeLength;
+        double perpendicularY = routeDx / routeLength;
+        double baseOffset = Math.max(zoneShape.halfWidth(), zoneShape.halfHeight());
+        double offset = baseOffset * (1.75d * multiplier) + COORDINATE_MARGIN.doubleValue();
+
+        double longitude = zoneShape.centerLongitude() + (perpendicularX * direction * offset);
+        double latitude = zoneShape.centerLatitude() + (perpendicularY * direction * offset);
+        return new GeoPoint(
+                clamp(longitude, -180d, 180d),
+                clamp(latitude, -90d, 90d));
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private ZoneShape buildZoneShape(
+            ZonaRiesgo zone,
+            GeoPoint origin,
+            double routeDx,
+            double routeDy,
+            double routeLength) {
+        RiskZoneGeometryDTO geometry = deserializeRiskZoneGeometry(zone.getCoordenadasGeojson());
+        if (!"Polygon".equalsIgnoreCase(geometry.getType())) {
+            log.error("Zona de riesgo con geometria no soportada zoneId={} type={}",
+                    zone.getIdZona(), geometry.getType());
+            throw new ApplicationConfigurationException(
+                    "La zona de riesgo contiene una geometria no soportada para el calculo de rutas");
+        }
+        if (geometry.getCoordinates() == null || geometry.getCoordinates().isEmpty()) {
+            log.error("Zona de riesgo con anillos de poligono vacios zoneId={}", zone.getIdZona());
+            throw new ApplicationConfigurationException(
+                    "La zona de riesgo no contiene coordenadas suficientes para el calculo de rutas");
+        }
+
+        double minLongitude = Double.POSITIVE_INFINITY;
+        double maxLongitude = Double.NEGATIVE_INFINITY;
+        double minLatitude = Double.POSITIVE_INFINITY;
+        double maxLatitude = Double.NEGATIVE_INFINITY;
+
+        for (List<List<BigDecimal>> ringCoordinates : geometry.getCoordinates()) {
+            validatePolygonRing(zone.getIdZona(), ringCoordinates);
+            for (List<BigDecimal> coordinate : ringCoordinates) {
+                GeoPoint point = toGeoPoint(coordinate);
+                minLongitude = Math.min(minLongitude, point.longitude);
+                maxLongitude = Math.max(maxLongitude, point.longitude);
+                minLatitude = Math.min(minLatitude, point.latitude);
+                maxLatitude = Math.max(maxLatitude, point.latitude);
+            }
+        }
+
+        double centerLongitude = (minLongitude + maxLongitude) / 2d;
+        double centerLatitude = (minLatitude + maxLatitude) / 2d;
+        double projection = ((centerLongitude - origin.longitude) * routeDx
+                + (centerLatitude - origin.latitude) * routeDy) / routeLength;
+
+        return new ZoneShape(
+                centerLongitude,
+                centerLatitude,
+                Math.max((maxLongitude - minLongitude) / 2d, COORDINATE_MARGIN.doubleValue()),
+                Math.max((maxLatitude - minLatitude) / 2d, COORDINATE_MARGIN.doubleValue()),
+                projection);
+    }
+
+    private RouteAlternative evaluateRoute(
+            SafeRouteGeometryDTO geometry,
+            List<ZonaRiesgo> activeZones,
+            Map<Integer, Ubicacion> locationsById) {
         List<SafeRouteRiskZoneDTO> crossedZones = activeZones.stream()
                 .filter(zone -> intersectsRoute(geometry, zone))
                 .map(zone -> buildCrossedZone(zone, locationsById.get(zone.getUbicacion().getIdUbicacion())))
@@ -85,42 +326,90 @@ public class SafeRouteService {
                         .thenComparing(SafeRouteRiskZoneDTO::getIdZona))
                 .toList();
 
-        int routeRiskLevel = crossedZones.stream()
-                .map(SafeRouteRiskZoneDTO::getNivelRiesgo)
-                .max(Integer::compareTo)
-                .orElse(LOW_RISK_LEVEL);
+        int distanceMeters = calculateDistanceInMeters(geometry.getCoordinates());
+        int estimatedTimeMinutes = Math.max(1, (int) Math.ceil(distanceMeters / WALKING_SPEED_METERS_PER_MINUTE));
+        int riskScore = calculateRiskScore(crossedZones);
+        int routeRiskLevel = resolveRiskLevelFromScore(riskScore);
 
-        Ruta savedRoute = persistRoute(
-                usuario,
-                normalizedRequest,
+        return new RouteAlternative(
                 geometry,
                 distanceMeters,
                 estimatedTimeMinutes,
+                riskScore,
                 routeRiskLevel,
-                crossedZones,
-                activeZones);
+                crossedZones);
+    }
 
-        log.info("Ruta segura calculada email={} rutaId={} distancia={} riesgo={} zonas={}",
-                authenticatedEmail,
-                savedRoute.getIdRuta(),
-                distanceMeters,
-                routeRiskLevel,
-                crossedZones.size());
+    private int calculateRiskScore(List<SafeRouteRiskZoneDTO> crossedZones) {
+        if (crossedZones.isEmpty()) {
+            return LOW_RISK_SCORE;
+        }
 
-        return SafeRouteResponseDTO.builder()
-                .rutaId(savedRoute.getIdRuta())
-                .mensaje("Ruta segura calculada correctamente")
-                .origen(normalizedRequest.getOrigen())
-                .destino(normalizedRequest.getDestino())
-                .distanciaMetros(distanceMeters)
-                .tiempoEstimadoMinutos(estimatedTimeMinutes)
-                .nivelRiesgo(routeRiskLevel)
-                .nivelRiesgoNombre(resolveRiskLevelName(routeRiskLevel))
-                .cruzaZonasRiesgo(!crossedZones.isEmpty())
-                .recomendaciones(buildRecommendations(routeRiskLevel, crossedZones.size()))
-                .geometria(geometry)
-                .zonasRiesgo(crossedZones)
-                .build();
+        int baseScore = crossedZones.stream()
+                .mapToInt(zone -> switch (zone.getNivelRiesgo()) {
+                    case LOW_RISK_LEVEL -> LOW_RISK_SCORE + 10;
+                    case MEDIUM_RISK_LEVEL -> MEDIUM_RISK_SCORE + 10;
+                    case HIGH_RISK_LEVEL -> HIGH_RISK_SCORE + 5;
+                    default -> throw new ApplicationConfigurationException(
+                            "La ruta contiene un nivel de riesgo no soportado");
+                })
+                .sum();
+        return Math.min(100, baseScore + Math.max(0, crossedZones.size() - 1) * 5);
+    }
+
+    private int resolveRiskLevelFromScore(int riskScore) {
+        if (riskScore <= 30) {
+            return LOW_RISK_LEVEL;
+        }
+        if (riskScore <= 69) {
+            return MEDIUM_RISK_LEVEL;
+        }
+        return HIGH_RISK_LEVEL;
+    }
+
+    private RouteAlternative selectRecommendedRoute(
+            RouteAlternative fastestRoute,
+            RouteAlternative safestRoute) {
+        int fastestTradeoff = fastestRoute.scoreRiesgo();
+        int safestTradeoff = safestRoute.scoreRiesgo()
+                + Math.max(0, safestRoute.tiempoEstimado() - fastestRoute.tiempoEstimado()) * 4;
+
+        if (safestTradeoff < fastestTradeoff) {
+            return safestRoute;
+        }
+        if (safestTradeoff > fastestTradeoff) {
+            return fastestRoute;
+        }
+        if (safestRoute.scoreRiesgo() < fastestRoute.scoreRiesgo()) {
+            return safestRoute;
+        }
+        return fastestRoute;
+    }
+
+    private String buildRecommendation(
+            RouteAlternative fastestRoute,
+            RouteAlternative safestRoute,
+            RouteAlternative recommendedRoute) {
+        if (recommendedRoute.equals(safestRoute) && !recommendedRoute.equals(fastestRoute)) {
+            int extraMinutes = Math.max(0, safestRoute.tiempoEstimado() - fastestRoute.tiempoEstimado());
+            return "Se recomienda la ruta mas segura porque reduce el score de riesgo de "
+                    + fastestRoute.scoreRiesgo()
+                    + " a "
+                    + safestRoute.scoreRiesgo()
+                    + " con un aumento estimado de "
+                    + extraMinutes
+                    + " minutos.";
+        }
+
+        if (fastestRoute.zonasRiesgo().isEmpty()) {
+            return "Se recomienda la ruta mas rapida porque no cruza zonas de riesgo activas.";
+        }
+
+        if (fastestRoute.scoreRiesgo() <= safestRoute.scoreRiesgo()) {
+            return "Se recomienda la ruta mas rapida porque mantiene el menor tiempo estimado sin empeorar el riesgo.";
+        }
+
+        return "Se recomienda la ruta mas rapida porque el desvio alternativo no compensa el tiempo adicional.";
     }
 
     private Usuario resolveActiveAuthenticatedUser(String authenticatedEmail) {
@@ -193,24 +482,7 @@ public class SafeRouteService {
         return SafeRoutePointDTO.builder()
                 .latitud(point.getLatitud().setScale(7, RoundingMode.HALF_UP))
                 .longitud(point.getLongitud().setScale(7, RoundingMode.HALF_UP))
-                .referencia(normalizeOptionalText(point.getReferencia(), 150, "La referencia no puede superar los 150 caracteres"))
-                .distrito(normalizeOptionalText(point.getDistrito(), 100, "El distrito no puede superar los 100 caracteres"))
-                .ciudad(normalizeOptionalText(point.getCiudad(), 100, "La ciudad no puede superar los 100 caracteres"))
                 .build();
-    }
-
-    private String normalizeOptionalText(String value, int maxLength, String validationMessage) {
-        if (value == null) {
-            return null;
-        }
-        String normalizedValue = value.trim();
-        if (!StringUtils.hasText(normalizedValue)) {
-            return null;
-        }
-        if (normalizedValue.length() > maxLength) {
-            throw new InvalidSafeRouteRequestException(validationMessage);
-        }
-        return normalizedValue;
     }
 
     private void validateGeographicDataAvailability() {
@@ -221,7 +493,7 @@ public class SafeRouteService {
         }
     }
 
-    private SafeRouteGeometryDTO buildRouteGeometry(SafeRouteRequestDTO request) {
+    private SafeRouteGeometryDTO buildDirectGeometry(SafeRouteRequestDTO request) {
         return SafeRouteGeometryDTO.builder()
                 .type("LineString")
                 .coordinates(List.of(
@@ -230,11 +502,23 @@ public class SafeRouteService {
                 .build();
     }
 
-    private int calculateDistanceInMeters(SafeRoutePointDTO origin, SafeRoutePointDTO destination) {
-        double lat1 = Math.toRadians(origin.getLatitud().doubleValue());
-        double lon1 = Math.toRadians(origin.getLongitud().doubleValue());
-        double lat2 = Math.toRadians(destination.getLatitud().doubleValue());
-        double lon2 = Math.toRadians(destination.getLongitud().doubleValue());
+    private int calculateDistanceInMeters(List<List<BigDecimal>> coordinates) {
+        int totalDistance = 0;
+        List<GeoPoint> points = coordinates.stream()
+                .map(this::toGeoPoint)
+                .toList();
+
+        for (int index = 0; index < points.size() - 1; index++) {
+            totalDistance += calculateDistanceBetween(points.get(index), points.get(index + 1));
+        }
+        return totalDistance;
+    }
+
+    private int calculateDistanceBetween(GeoPoint origin, GeoPoint destination) {
+        double lat1 = Math.toRadians(origin.latitude);
+        double lon1 = Math.toRadians(origin.longitude);
+        double lat2 = Math.toRadians(destination.latitude);
+        double lon2 = Math.toRadians(destination.longitude);
 
         double deltaLat = lat2 - lat1;
         double deltaLon = lon2 - lon1;
@@ -280,8 +564,9 @@ public class SafeRouteService {
                     "La zona de riesgo no contiene coordenadas suficientes para el calculo de rutas");
         }
 
-        GeoPoint origin = toGeoPoint(routeGeometry.getCoordinates().get(0));
-        GeoPoint destination = toGeoPoint(routeGeometry.getCoordinates().get(1));
+        List<GeoPoint> routePoints = routeGeometry.getCoordinates().stream()
+                .map(this::toGeoPoint)
+                .toList();
 
         for (List<List<BigDecimal>> ringCoordinates : zoneGeometry.getCoordinates()) {
             validatePolygonRing(zone.getIdZona(), ringCoordinates);
@@ -289,13 +574,21 @@ public class SafeRouteService {
                     .map(this::toGeoPoint)
                     .toList();
 
-            if (pointInsidePolygon(origin, polygon) || pointInsidePolygon(destination, polygon)) {
-                return true;
+            for (GeoPoint routePoint : routePoints) {
+                if (pointInsidePolygon(routePoint, polygon)) {
+                    return true;
+                }
             }
 
-            for (int index = 0; index < polygon.size() - 1; index++) {
-                if (segmentsIntersect(origin, destination, polygon.get(index), polygon.get(index + 1))) {
-                    return true;
+            for (int routeIndex = 0; routeIndex < routePoints.size() - 1; routeIndex++) {
+                for (int polygonIndex = 0; polygonIndex < polygon.size() - 1; polygonIndex++) {
+                    if (segmentsIntersect(
+                            routePoints.get(routeIndex),
+                            routePoints.get(routeIndex + 1),
+                            polygon.get(polygonIndex),
+                            polygon.get(polygonIndex + 1))) {
+                        return true;
+                    }
                 }
             }
         }
@@ -337,28 +630,26 @@ public class SafeRouteService {
     private Ruta persistRoute(
             Usuario usuario,
             SafeRouteRequestDTO request,
-            SafeRouteGeometryDTO geometry,
-            int distanceMeters,
-            int estimatedTimeMinutes,
-            int routeRiskLevel,
-            List<SafeRouteRiskZoneDTO> crossedZones,
+            RouteAlternative recommendedRoute,
+            SafeRouteResponseDTO response,
             List<ZonaRiesgo> activeZones) {
         Ruta route = Ruta.builder()
                 .origenLatitud(request.getOrigen().getLatitud())
                 .origenLongitud(request.getOrigen().getLongitud())
                 .destinoLatitud(request.getDestino().getLatitud())
                 .destinoLongitud(request.getDestino().getLongitud())
-                .nivelRiesgo(routeRiskLevel)
-                .distanciaMetros(distanceMeters)
-                .tiempoEstimadoMinutos(estimatedTimeMinutes)
-                .geometriaGeojson(serializeRouteGeometry(geometry))
+                .nivelRiesgo(recommendedRoute.nivelRiesgo())
+                .distanciaMetros(recommendedRoute.distancia())
+                .tiempoEstimadoMinutos(recommendedRoute.tiempoEstimado())
+                .geometriaGeojson(serializeRouteGeometry(recommendedRoute.geometria()))
+                .resultadoJson(serializeRouteResponse(response))
                 .fechaCalculo(LocalDateTime.now())
                 .usuario(usuario)
                 .build();
 
         Ruta savedRoute = rutaRepository.save(route);
-        if (!crossedZones.isEmpty()) {
-            List<RutaZona> routeZones = crossedZones.stream()
+        if (!recommendedRoute.zonasRiesgo().isEmpty()) {
+            List<RutaZona> routeZones = recommendedRoute.zonasRiesgo().stream()
                     .map(zone -> RutaZona.builder()
                             .id(new RutaZonaId(savedRoute.getIdRuta(), zone.getIdZona()))
                             .ruta(savedRoute)
@@ -378,22 +669,6 @@ public class SafeRouteService {
                         "No se encontro la zona de riesgo asociada a la ruta calculada"));
     }
 
-    private List<String> buildRecommendations(int routeRiskLevel, int crossedZonesCount) {
-        List<String> recommendations = new ArrayList<>();
-        recommendations.add("Mantenerse atento al entorno durante todo el trayecto");
-
-        if (crossedZonesCount > 0) {
-            recommendations.add("Priorizar vias principales y zonas con mayor iluminacion");
-        }
-        if (routeRiskLevel >= MEDIUM_RISK_LEVEL) {
-            recommendations.add("Evitar detenerse en tramos con menor flujo peatonal");
-        }
-        if (routeRiskLevel >= HIGH_RISK_LEVEL) {
-            recommendations.add("Considerar una ruta alternativa o realizar el trayecto acompanado");
-        }
-        return recommendations;
-    }
-
     private RiskZoneGeometryDTO deserializeRiskZoneGeometry(String geometryJson) {
         try {
             return objectMapper.readValue(geometryJson, RiskZoneGeometryDTO.class);
@@ -411,6 +686,16 @@ public class SafeRouteService {
             log.error("No se pudo serializar la geometria de la ruta calculada", exception);
             throw new ApplicationConfigurationException(
                     "No se pudo serializar la geometria de la ruta calculada");
+        }
+    }
+
+    private String serializeRouteResponse(SafeRouteResponseDTO response) {
+        try {
+            return objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException exception) {
+            log.error("No se pudo serializar el resultado de la ruta calculada", exception);
+            throw new ApplicationConfigurationException(
+                    "No se pudo serializar el resultado de la ruta calculada");
         }
     }
 
@@ -439,6 +724,12 @@ public class SafeRouteService {
                     "La zona de riesgo contiene coordenadas incompletas para el calculo de rutas");
         }
         return new GeoPoint(coordinate.get(0).doubleValue(), coordinate.get(1).doubleValue());
+    }
+
+    private List<BigDecimal> toCoordinate(double longitude, double latitude) {
+        return List.of(
+                BigDecimal.valueOf(longitude).setScale(7, RoundingMode.HALF_UP),
+                BigDecimal.valueOf(latitude).setScale(7, RoundingMode.HALF_UP));
     }
 
     private boolean pointInsidePolygon(GeoPoint point, List<GeoPoint> polygon) {
@@ -503,5 +794,22 @@ public class SafeRouteService {
     }
 
     private record GeoPoint(double longitude, double latitude) {
+    }
+
+    private record ZoneShape(
+            double centerLongitude,
+            double centerLatitude,
+            double halfWidth,
+            double halfHeight,
+            double projection) {
+    }
+
+    private record RouteAlternative(
+            SafeRouteGeometryDTO geometria,
+            int distancia,
+            int tiempoEstimado,
+            int scoreRiesgo,
+            int nivelRiesgo,
+            List<SafeRouteRiskZoneDTO> zonasRiesgo) {
     }
 }

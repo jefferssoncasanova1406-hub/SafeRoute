@@ -58,6 +58,9 @@ public class Ruta extends EntidadAuditable {
     @Column(name = "geometria_geojson", nullable = false, columnDefinition = "TEXT")
     private String geometriaGeojson;
 
+    @Column(name = "resultado_json", columnDefinition = "TEXT")
+    private String resultadoJson;
+
     @Column(name = "fecha_calculo", nullable = false)
     private LocalDateTime fechaCalculo;
 

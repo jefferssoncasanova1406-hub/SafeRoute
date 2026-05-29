@@ -1,10 +1,12 @@
-﻿package com.upc.grupo3.services;
+package com.upc.grupo3.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,8 +65,7 @@ class SafeRouteServiceTest {
                 zonaRiesgoRepository,
                 ubicacionRepository,
                 usuarioRepository,
-                new GeometryJsonService(new ObjectMapper()),
-                new RiskLevelCatalog());
+                new ObjectMapper());
     }
 
     @Test
@@ -105,29 +106,25 @@ class SafeRouteServiceTest {
                 "luis.rojas@demo.com",
                 SafeRouteRequestDTO.builder()
                         .origen(SafeRoutePointDTO.builder()
-                                .latitud(new BigDecimal("-12.0464000"))
-                                .longitud(new BigDecimal("-77.0428000"))
-                                .referencia("Av. Abancay 123")
-                                .distrito("Cercado de Lima")
-                                .ciudad("Lima")
+                                .latitud(new BigDecimal("-12.0465000"))
+                                .longitud(new BigDecimal("-77.0440000"))
                                 .build())
                         .destino(SafeRoutePointDTO.builder()
-                                .latitud(new BigDecimal("-12.1211000"))
-                                .longitud(new BigDecimal("-77.0305000"))
-                                .referencia("Parque Kennedy")
-                                .distrito("Miraflores")
-                                .ciudad("Lima")
+                                .latitud(new BigDecimal("-12.0465000"))
+                                .longitud(new BigDecimal("-77.0415000"))
                                 .build())
                         .build());
 
-        assertEquals(15, response.getRutaId());
-        assertTrue(response.getCruzaZonasRiesgo());
-        assertEquals(3, response.getNivelRiesgo());
-        assertEquals("alto", response.getNivelRiesgoNombre());
-        assertEquals(1, response.getZonasRiesgo().size());
-        assertEquals("ROBO", response.getZonasRiesgo().get(0).getTipo());
+        assertNotNull(response.getRutaMasRapida());
+        assertNotNull(response.getRutaMasSegura());
+        assertNotNull(response.getRutaRecomendada());
+        assertTrue(response.getRutaMasRapida().getCruzaZonasRiesgo());
+        assertEquals("ROBO", response.getRutaMasRapida().getZonasRiesgo().get(0).getTipo());
+        assertTrue(response.getRutaMasSegura().getScoreRiesgo() <= response.getRutaMasRapida().getScoreRiesgo());
+        assertEquals(response.getRutaRecomendada().getScoreRiesgo(), response.getScoreRiesgo());
+        assertEquals(response.getRutaRecomendada().getNivelRiesgo(), response.getNivelRiesgo());
+        assertNotNull(response.getRecomendacion());
         verify(rutaRepository).save(any(Ruta.class));
-        verify(rutaZonaRepository).saveAll(any());
     }
 
     @Test
@@ -157,11 +154,12 @@ class SafeRouteServiceTest {
                                 .build())
                         .build());
 
-        assertEquals(20, response.getRutaId());
-        assertFalse(response.getCruzaZonasRiesgo());
-        assertEquals(1, response.getNivelRiesgo());
-        assertEquals("bajo", response.getNivelRiesgoNombre());
-        assertEquals(0, response.getZonasRiesgo().size());
+        assertFalse(response.getRutaMasRapida().getCruzaZonasRiesgo());
+        assertFalse(response.getRutaMasSegura().getCruzaZonasRiesgo());
+        assertEquals(10, response.getScoreRiesgo());
+        assertEquals("bajo", response.getNivelRiesgo());
+        assertEquals(0, response.getRutaRecomendada().getZonasRiesgo().size());
+        verify(rutaZonaRepository, never()).saveAll(any());
     }
 
     @Test

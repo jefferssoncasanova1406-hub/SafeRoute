@@ -51,7 +51,9 @@ INSERT INTO ubicacion (
     auditoria_fecha_modificacion
 ) VALUES
 (-12.0464000, -77.0428000, 'Cercado de Lima', 'Lima', '2026-05-12 08:00:00', '2026-05-12 08:00:00'),
-(-12.1211000, -77.0305000, 'Miraflores', 'Lima', '2026-05-12 08:00:00', '2026-05-12 08:00:00');
+(-12.1211000, -77.0305000, 'Miraflores', 'Lima', '2026-05-12 08:00:00', '2026-05-12 08:00:00'),
+(-12.0465000, -77.0440000, 'Cercado de Lima', 'Lima', '2026-05-12 08:00:00', '2026-05-12 08:00:00'),
+(-12.0465000, -77.0415000, 'Cercado de Lima', 'Lima', '2026-05-12 08:00:00', '2026-05-12 08:00:00');
 
 INSERT INTO zona_riesgo (
     tipo,
@@ -86,3 +88,7 @@ INSERT INTO zona_riesgo (
     '2026-05-12 09:15:00',
     '2026-05-12 09:15:00'
 );
+
+-- Puntos sugeridos para probar la ruta segura con desvio:
+-- origen  = { "latitud": -12.0465000, "longitud": -77.0440000 }
+-- destino = { "latitud": -12.0465000, "longitud": -77.0415000 }
