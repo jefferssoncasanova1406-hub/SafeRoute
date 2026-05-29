@@ -482,24 +482,7 @@ public class SafeRouteService {
         return SafeRoutePointDTO.builder()
                 .latitud(point.getLatitud().setScale(7, RoundingMode.HALF_UP))
                 .longitud(point.getLongitud().setScale(7, RoundingMode.HALF_UP))
-                .referencia(normalizeOptionalText(point.getReferencia(), 150, "La referencia no puede superar los 150 caracteres"))
-                .distrito(normalizeOptionalText(point.getDistrito(), 100, "El distrito no puede superar los 100 caracteres"))
-                .ciudad(normalizeOptionalText(point.getCiudad(), 100, "La ciudad no puede superar los 100 caracteres"))
                 .build();
-    }
-
-    private String normalizeOptionalText(String value, int maxLength, String validationMessage) {
-        if (value == null) {
-            return null;
-        }
-        String normalizedValue = value.trim();
-        if (!StringUtils.hasText(normalizedValue)) {
-            return null;
-        }
-        if (normalizedValue.length() > maxLength) {
-            throw new InvalidSafeRouteRequestException(validationMessage);
-        }
-        return normalizedValue;
     }
 
     private void validateGeographicDataAvailability() {

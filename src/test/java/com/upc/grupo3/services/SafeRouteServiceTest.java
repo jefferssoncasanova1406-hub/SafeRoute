@@ -108,16 +108,10 @@ class SafeRouteServiceTest {
                         .origen(SafeRoutePointDTO.builder()
                                 .latitud(new BigDecimal("-12.0465000"))
                                 .longitud(new BigDecimal("-77.0440000"))
-                                .referencia("Punto de salida")
-                                .distrito("Cercado de Lima")
-                                .ciudad("Lima")
                                 .build())
                         .destino(SafeRoutePointDTO.builder()
                                 .latitud(new BigDecimal("-12.0465000"))
                                 .longitud(new BigDecimal("-77.0415000"))
-                                .referencia("Punto de llegada")
-                                .distrito("Cercado de Lima")
-                                .ciudad("Lima")
                                 .build())
                         .build());
 
