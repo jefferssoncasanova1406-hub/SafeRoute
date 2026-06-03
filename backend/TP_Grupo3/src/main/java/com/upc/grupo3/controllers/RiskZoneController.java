@@ -110,7 +110,7 @@ public class RiskZoneController {
     public ResponseEntity<RiskZoneListResponseDTO> getActiveAlerts() {
         log.info("Consulta simplificada de alertas activas para el mapa solicitada");
 
-        // Llamamos al nuevo método que añadimos en el RiskZoneService
+        // Llamamos al nuevo metodo que añadimos en el RiskZoneService
         RiskZoneListResponseDTO response = riskZoneService.getActiveAlertsForMap();
 
         log.info("Consulta de alertas activas completada total={}", response.getZonas().size());
