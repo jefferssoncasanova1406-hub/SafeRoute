@@ -11,13 +11,7 @@ import com.upc.grupo3.entidades.ConfiguracionPrivacidad;
 import com.upc.grupo3.entidades.Perfil;
 import com.upc.grupo3.entidades.Rol;
 import com.upc.grupo3.entidades.Usuario;
-import com.upc.grupo3.exceptions.AccountDisabledException;
-import com.upc.grupo3.exceptions.ApplicationConfigurationException;
-import com.upc.grupo3.exceptions.EmailAlreadyRegisteredException;
-import com.upc.grupo3.exceptions.InvalidAuthorizationHeaderException;
-import com.upc.grupo3.exceptions.InvalidCredentialsException;
-import com.upc.grupo3.exceptions.TokenOwnershipException;
-import com.upc.grupo3.exceptions.UnauthenticatedUserException;
+import com.upc.grupo3.exceptions.*;
 import com.upc.grupo3.repositories.ConfiguracionPrivacidadRepository;
 import com.upc.grupo3.repositories.PerfilRepository;
 import com.upc.grupo3.repositories.RolRepository;
@@ -57,6 +51,55 @@ public class AuthService {
     private final TokenRevocationService tokenRevocationService;
 
     @Transactional(readOnly = true)
+
+    //HU4
+    public void saveResetPasswordToken(String email) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con ese correo"));
+
+        // Generamos un código único aleatorio
+        String token = java.util.UUID.randomUUID().toString();
+        usuario.setResetPasswordToken(token);
+        usuarioRepository.save(usuario);
+
+        log.info("Token de recuperación generado para el usuario: {}", email);
+        // Nota: Aquí normalmente se enviaría un correo, pero por ahora solo lo guardamos en BD
+    }
+
+    @Transactional
+    public void updatePasswordWithToken(String token, String newPassword) {
+        // 1. Buscamos al usuario que tenga ese token específico
+        Usuario usuario = usuarioRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("El enlace de recuperación es inválido o ha expirado"));
+
+        // 2. Encriptamos la nueva contraseña y la guardamos en el campo 'contrasena'
+        usuario.setContrasena(passwordEncoder.encode(newPassword));
+
+        // 3. Limpiamos el token para que no se pueda volver a usar por seguridad
+        usuario.setResetPasswordToken(null);
+
+        usuarioRepository.save(usuario);
+        log.info("Contraseña restablecida con éxito para el usuario: {}", usuario.getEmail());
+    }
+
+    //HU5
+    public void updatePasswordFromProfile(String email, String currentPassword, String newPassword) {
+        //Buscamos al usuario por el email que viene del token
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        //Verificamos que la contraseña actual sea la correcta
+        if (!passwordEncoder.matches(currentPassword, usuario.getPassword())) {
+            throw new InvalidCredentialsException("La contraseña actual es incorrecta");
+        }
+
+        //Encriptamos la nueva contraseña y la guardamos
+        usuario.setPassword(passwordEncoder.encode(newPassword));
+        usuarioRepository.save(usuario);
+
+        log.info("Contraseña actualizada exitosamente para el usuario: {}", email);
+    }
+
     public LoginResponseDTO login(LoginRequestDTO request) {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
         log.debug("Iniciando login para email={}", normalizedEmail);

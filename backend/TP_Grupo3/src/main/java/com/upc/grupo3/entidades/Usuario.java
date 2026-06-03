@@ -49,6 +49,9 @@ public class Usuario extends EntidadAuditable {
     @Column(name = "Estado", nullable = false)
     private Boolean estado;
 
+    @Column(name = "reset_password_token")
+    private String resetPasswordToken;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "Rol_id_rol", nullable = false)
     private Rol rol;
@@ -62,4 +65,11 @@ public class Usuario extends EntidadAuditable {
     @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Ruta> rutas = new ArrayList<>();
+
+    public void setPassword(String encode) {
+    }
+
+    public String getPassword() {
+        return null;
+    }
 }

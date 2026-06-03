@@ -11,12 +11,13 @@ INSERT INTO usuario (
     fecha_registro,
     estado,
     rol_id_rol,
+    tipo_usuario,
     auditoria_fecha_creacion,
     auditoria_fecha_modificacion
 ) VALUES
-('Ana Torres', 'ana.torres@demo.com', '$2a$12$qQoMn8NycNiny5CuWlCSPe/EEgCj5EmR2DUdBmqO4C5bG096iCNW2', '2026-01-10', true, 1, '2026-01-10 08:00:00', '2026-01-10 08:00:00'),
-('Luis Rojas', 'luis.rojas@demo.com', '$2a$10$9x4uQBOjJkw3Xrq5JclZgOn7rH0xR271GGBqBPdZiZsaAJ2bI7IuW', '2026-01-15', true, 2, '2026-01-15 08:00:00', '2026-01-15 08:00:00'),
-('Carla Vega', 'carla.vega@demo.com', '$2a$10$kFz2QxYDs2fzGEylh4G6U.xiRaY1oCbcnZ6FQcmGeXgnz9KqSXBRe', '2026-02-01', false, 2, '2026-02-01 08:00:00', '2026-02-01 08:00:00');
+('Ana Torres', 'ana.torres@demo.com', '$2a$12$qQoMn8NycNiny5CuWlCSPe/EEgCj5EmR2DUdBmqO4C5bG096iCNW2', '2026-01-10', true, 1, 'ESTUDIANTE', '2026-01-10 08:00:00', '2026-01-10 08:00:00'),
+('Luis Rojas', 'luis.rojas@demo.com', '$2a$10$9x4uQBOjJkw3Xrq5JclZgOn7rH0xR271GGBqBPdZiZsaAJ2bI7IuW', '2026-01-15', true, 2, 'ESTUDIANTE','2026-01-15 08:00:00', '2026-01-15 08:00:00'),
+('Carla Vega', 'carla.vega@demo.com', '$2a$10$kFz2QxYDs2fzGEylh4G6U.xiRaY1oCbcnZ6FQcmGeXgnz9KqSXBRe', '2026-02-01', false, 2, 'ESTUDIANTE','2026-02-01 08:00:00', '2026-02-01 08:00:00');
 
 INSERT INTO perfil (
     id_usuario,
