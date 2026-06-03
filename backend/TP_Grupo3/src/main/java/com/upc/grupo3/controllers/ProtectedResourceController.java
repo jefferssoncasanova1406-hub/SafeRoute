@@ -1,20 +1,28 @@
 package com.upc.grupo3.controllers;
 
 import com.upc.grupo3.dtos.auth.AuthenticatedUserDTO;
+import com.upc.grupo3.dtos.auth.PasswordChangeRequestDTO;
 import com.upc.grupo3.dtos.common.ProtectedResourceResponseDTO;
 import java.util.List;
+
+import com.upc.grupo3.services.AuthService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import com.upc.grupo3.services.AuthService;
+import lombok.RequiredArgsConstructor;
+
 
 @RestController
 @RequestMapping("/secure")
+@RequiredArgsConstructor
 @Slf4j
 public class ProtectedResourceController {
+
+    private final AuthService authService;
 
     @GetMapping("/me")
     public ResponseEntity<ProtectedResourceResponseDTO> getAuthenticatedUser(Authentication authentication) {
@@ -33,5 +41,20 @@ public class ProtectedResourceController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    //HU5
+    // Añadir al ProtectedResourceController.java
+    // Importa el DTO y el AuthService arriba
+    @PatchMapping("/change-password")
+    public ResponseEntity<String> changePassword(
+            @Valid @RequestBody PasswordChangeRequestDTO request,
+            Authentication authentication) {
+        // Obtenemos el email directamente del token de sesión
+        String email = authentication.getName();
+
+        authService.updatePasswordFromProfile(email, request.getCurrentPassword(), request.getNewPassword());
+
+        return ResponseEntity.ok("Contraseña actualizada correctamente");
     }
 }
