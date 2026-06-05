@@ -21,6 +21,7 @@ public class SafeRouteController {
 
     private final SafeRouteService safeRouteService;
 
+    //HU13
     @PostMapping("/calcular-segura")
     public ResponseEntity<SafeRouteResponseDTO> calculateSafeRoute(
             @Valid @RequestBody SafeRouteRequestDTO request,

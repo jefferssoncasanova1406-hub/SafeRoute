@@ -16,5 +16,12 @@ public class PrivacyPreferencesResponseDTO {
     private Integer userId;
     private Boolean realTimeLocationEnabled;
     private Boolean personalDataSharingEnabled;
-    private String message;
+
+    // HU17: Retorno de preferencias detalladas
+    private Boolean appNotificationsEnabled;
+    private Boolean emailNotificationsEnabled;
+    private Integer minRiskLevel;
+    private String incidentTypesFiltered;
+
+    private String message; // Para cumplir el Escenario 3 (Confirmación exitosa)
 }
