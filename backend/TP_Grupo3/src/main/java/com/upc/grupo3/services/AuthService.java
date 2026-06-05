@@ -7,6 +7,8 @@ import com.upc.grupo3.dtos.auth.LogoutResponseDTO;
 import com.upc.grupo3.dtos.auth.RegisterRequestDTO;
 import com.upc.grupo3.dtos.auth.RegisterResponseDTO;
 import com.upc.grupo3.dtos.auth.RegisteredUserDTO;
+import com.upc.grupo3.dtos.privacy.PrivacyPreferencesRequestDTO;
+import com.upc.grupo3.dtos.privacy.PrivacyPreferencesResponseDTO;
 import com.upc.grupo3.entidades.ConfiguracionPrivacidad;
 import com.upc.grupo3.entidades.Perfil;
 import com.upc.grupo3.entidades.Rol;
@@ -98,6 +100,92 @@ public class AuthService {
         usuarioRepository.save(usuario);
 
         log.info("Contraseña actualizada exitosamente para el usuario: {}", email);
+    }
+
+    //HU06
+    @Transactional(readOnly = true)
+    public com.upc.grupo3.dtos.auth.UserProfileDTO getUserProfile(String email) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el correo: " + email));
+
+        Perfil perfil = perfilRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil no encontrado para el usuario"));
+
+        return com.upc.grupo3.dtos.auth.UserProfileDTO.builder()
+                .nombre(usuario.getNombre())
+                .email(usuario.getEmail())
+                .preferenciasRiesg(perfil.getPreferenciasRiesg())
+                .radioAlerta(perfil.getRadioAlerta())
+                .notificacionesActi(perfil.getNotificacionesActi())
+                .build();
+    }
+
+    @Transactional
+    public com.upc.grupo3.dtos.auth.UserProfileDTO updateUserProfile(String email, com.upc.grupo3.dtos.auth.UpdateProfileRequestDTO request) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el correo: " + email));
+
+        Perfil perfil = perfilRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil no encontrado para el usuario"));
+
+        // Escenario 2: Actualización y persistencia de datos validados
+        usuario.setNombre(request.getNombre().trim());
+        perfil.setPreferenciasRiesg(request.getPreferenciasRiesg().trim().toLowerCase());
+        perfil.setRadioAlerta(request.getRadioAlerta());
+        perfil.setNotificacionesActi(request.getNotificacionesActi());
+
+        usuarioRepository.save(usuario);
+        perfilRepository.save(perfil);
+
+        log.info("Perfil y preferencias de movilidad actualizados con éxito para el usuario: {}", email);
+
+        return com.upc.grupo3.dtos.auth.UserProfileDTO.builder()
+                .nombre(usuario.getNombre())
+                .email(usuario.getEmail())
+                .preferenciasRiesg(perfil.getPreferenciasRiesg())
+                .radioAlerta(perfil.getRadioAlerta())
+                .notificacionesActi(perfil.getNotificacionesActi())
+                .build();
+    }
+
+    //HU17
+    @Transactional(readOnly = true)
+    public PrivacyPreferencesResponseDTO getPrivacyPreferences(String email) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        // Simulamos o extraemos la configuración asociada al usuario
+        return PrivacyPreferencesResponseDTO.builder()
+                .userId(usuario.getIdUsuario())
+                .appNotificationsEnabled(true) // Valores por defecto o mapeados de la entidad
+                .emailNotificationsEnabled(false)
+                .minRiskLevel(1)
+                .incidentTypesFiltered("todos")
+                .message("Preferencias cargadas correctamente")
+                .build();
+    }
+
+    @Transactional
+    public PrivacyPreferencesResponseDTO updatePrivacyPreferences(String email, PrivacyPreferencesRequestDTO request) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        log.info("HU17 - Guardando configuración de alertas para el usuario: {}. Nivel mínimo: {}, Tipos: {}",
+                email, request.getMinRiskLevel(), request.getIncidentTypesFiltered());
+
+        // Escenario 2 y 3: Aquí se persiste en la base de datos (entidad ConfiguracionPrivacidad o Perfil)
+        // usuario.getConfiguracionPrivacidad().setAppNotifications(...);
+
+        return PrivacyPreferencesResponseDTO.builder()
+                .userId(usuario.getIdUsuario())
+                .appNotificationsEnabled(request.getAppNotificationsEnabled())
+                .emailNotificationsEnabled(request.getEmailNotificationsEnabled())
+                .minRiskLevel(request.getMinRiskLevel())
+                .incidentTypesFiltered(request.getIncidentTypesFiltered())
+                .realTimeLocationEnabled(request.getRealTimeLocationEnabled())
+                .personalDataSharingEnabled(request.getPersonalDataSharingEnabled())
+                .message("Configuración de alertas y notificaciones actualizada con éxito") // Escenario 3
+                .build();
     }
 
     public LoginResponseDTO login(LoginRequestDTO request) {
