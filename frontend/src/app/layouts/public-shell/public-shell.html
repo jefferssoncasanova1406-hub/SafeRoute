@@ -1,0 +1,16 @@
+<div class="public-shell">
+  <header class="pub-header" role="banner">
+    <a class="pub-header__brand" routerLink="/inicio" aria-label="SafeRoute — página de inicio">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="pub-header__brand-name">SafeRoute</span>
+    </a>
+    <nav class="pub-header__nav" aria-label="Acceso a la cuenta">
+      <a class="pub-nav__link" routerLink="/iniciar-sesion">Iniciar sesión</a>
+      <a class="button button--ghost pub-nav__cta" routerLink="/crear-cuenta">Crear cuenta</a>
+    </nav>
+  </header>
+
+  <main class="pub-main" id="main-content">
+    <router-outlet />
+  </main>
+</div>
