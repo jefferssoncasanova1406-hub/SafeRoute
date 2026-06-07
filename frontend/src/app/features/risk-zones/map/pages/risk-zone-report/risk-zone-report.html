@@ -1,0 +1,178 @@
+<section class="page risk-zone-report-page">
+  <header class="app-page-header">
+    <div>
+      <p class="app-page-header__eyebrow">Zonas</p>
+      <h1>Zonas activas</h1>
+      <p>
+        Consulta las zonas con actividad registrada y selecciona una para ver su detalle.
+      </p>
+    </div>
+
+    <div class="app-page-header__actions">
+      <a class="button button--secondary" routerLink="/admin/zonas">
+        Ir a gestión
+      </a>
+    </div>
+  </header>
+
+  <section class="split-layout atlas-layout">
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Filtros</span>
+        <h2 class="panel__title">Busca por ciudad o distrito</h2>
+        <p class="panel__copy">
+          Usa filtros opcionales para concentrarte en el área que necesitas revisar.
+        </p>
+      </div>
+
+      <div class="panel__body">
+        <form class="form-grid" [formGroup]="filterForm" (ngSubmit)="loadZones()">
+          <div class="field-grid field-grid--2">
+            <div class="field">
+              <label for="ciudad">Ciudad</label>
+              <input
+                id="ciudad"
+                class="control"
+                type="text"
+                formControlName="ciudad"
+                placeholder="Ej. Lima"
+              />
+            </div>
+
+            <div class="field">
+              <label for="distrito">Distrito</label>
+              <input
+                id="distrito"
+                class="control"
+                type="text"
+                formControlName="distrito"
+                placeholder="Ej. Miraflores"
+              />
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button class="button" type="submit" [disabled]="isLoading()">
+              {{ isLoading() ? 'Actualizando...' : 'Actualizar vista' }}
+            </button>
+          </div>
+        </form>
+
+        @if (requestError(); as errorMessage) {
+          <div class="notice notice--error" role="alert">
+            <strong>No se pudo actualizar la vista.</strong>
+            <p>{{ errorMessage }}</p>
+          </div>
+        }
+
+        <div class="metric-grid">
+          @for (metric of zoneMetrics(); track metric.label) {
+            <article class="metric-tile">
+              <span class="metric-tile__label">{{ metric.label }}</span>
+              <strong class="metric-tile__value">{{ metric.value }}</strong>
+            </article>
+          }
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Mapa</span>
+        <h2 class="panel__title">Distribución de zonas</h2>
+        <p class="panel__copy">
+          Selecciona una zona en el mapa para ver su contexto.
+        </p>
+      </div>
+
+      <div class="panel__body atlas-body">
+        @if (atlasPreview(); as preview) {
+          <div class="svg-frame atlas-frame">
+            <svg viewBox="0 0 100 100" role="img" aria-label="Mapa simplificado de zonas activas">
+              @for (polygon of preview.polygons; track polygon.idZona) {
+                <polygon
+                  class="atlas-polygon"
+                  [class.is-selected]="selectedZone()?.idZona === polygon.idZona"
+                  [attr.points]="polygon.points"
+                  [attr.fill]="polygon.color"
+                  [attr.stroke]="polygon.color"
+                  (click)="selectZone(polygon.idZona)"
+                  role="button"
+                  [attr.aria-label]="'Zona ' + polygon.idZona"
+                  tabindex="0"
+                  (keydown.enter)="selectZone(polygon.idZona)"
+                ></polygon>
+              }
+
+              @for (center of preview.centers; track center.idZona) {
+                <circle
+                  class="atlas-center"
+                  [class.is-selected]="selectedZone()?.idZona === center.idZona"
+                  [attr.cx]="center.point.split(',')[0]"
+                  [attr.cy]="center.point.split(',')[1]"
+                  r="1.7"
+                ></circle>
+              }
+            </svg>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <h3>Sin zonas para mostrar</h3>
+            <p>Actualiza la vista para construir el mapa de zonas activas.</p>
+          </div>
+        }
+
+        @if (selectedZone(); as zone) {
+          <article class="list-card atlas-detail-card">
+            <div class="list-card__top">
+              <div>
+                <span class="subtle-label">{{ zone.tipo }}</span>
+                <h3 class="list-card__title">{{ zone.centro.distrito }}</h3>
+              </div>
+              <span [class]="'badge badge--' + zoneTone(zone)">
+                {{ zone.nivelRiesgoNombre }}
+              </span>
+            </div>
+            <p class="list-card__copy">{{ zone.descripcion }}</p>
+            <div class="pill-list">
+              <span class="tag">{{ zone.centro.ciudad }}</span>
+            </div>
+          </article>
+        }
+      </div>
+    </article>
+  </section>
+
+  <section class="card-grid zone-card-grid">
+    @for (zone of zones(); track zone.idZona) {
+      <article
+        class="list-card zone-summary-card"
+        (click)="selectZone(zone.idZona)"
+        role="button"
+        tabindex="0"
+        [attr.aria-pressed]="selectedZone()?.idZona === zone.idZona"
+        (keydown.enter)="selectZone(zone.idZona)"
+      >
+        <div class="list-card__top">
+          <div>
+            <span class="subtle-label">Zona {{ zone.idZona }}</span>
+            <h3 class="list-card__title">{{ zone.tipo }}</h3>
+          </div>
+          <span [class]="'badge badge--' + zoneTone(zone)">
+            {{ zone.nivelRiesgoNombre }}
+          </span>
+        </div>
+        <p class="list-card__copy">{{ zone.descripcion }}</p>
+        <div class="pill-list">
+          <span class="tag">{{ zone.centro.distrito }}</span>
+          <span class="tag">{{ zone.centro.ciudad }}</span>
+        </div>
+      </article>
+    } @empty {
+      <div class="empty-state">
+        <h3>Sin zonas activas registradas</h3>
+        <p>Cuando haya información disponible, aparecerá aquí.</p>
+      </div>
+    }
+  </section>
+</section>
