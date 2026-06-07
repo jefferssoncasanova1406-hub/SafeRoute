@@ -1,0 +1,46 @@
+<div class="page dashboard-page">
+  <header class="dashboard-greeting">
+    <div class="dashboard-greeting__text">
+      <p class="eyebrow">Panel personal</p>
+      <h1 class="dashboard-greeting__name">Hola, {{ firstName() }}.</h1>
+      <p class="dashboard-greeting__sub lede">¿A dónde vas hoy?</p>
+    </div>
+
+    @if (session(); as s) {
+      <div class="dashboard-greeting__meta">
+        <span class="badge badge--brand">{{ s.user.rol }}</span>
+        <span class="subtle-label">{{ s.user.email }}</span>
+      </div>
+    }
+  </header>
+
+  <div class="dashboard-cards">
+    @for (action of actions; track action.route) {
+      <a
+        class="dashboard-card"
+        [class.dashboard-card--brand]="action.tone === 'brand'"
+        [class.dashboard-card--accent]="action.tone === 'accent'"
+        [routerLink]="action.route"
+      >
+        <div class="dashboard-card__body">
+          <h2>{{ action.title }}</h2>
+          <p>{{ action.description }}</p>
+        </div>
+        <span class="dashboard-card__cta">{{ action.cta }} →</span>
+      </a>
+    }
+
+    @if (isAdmin()) {
+      <a class="dashboard-card dashboard-card--admin" routerLink="/admin/zonas">
+        <div class="dashboard-card__body">
+          <span class="badge badge--accent" style="width:fit-content">Administración</span>
+          <h2>Gestión de zonas</h2>
+          <p>
+            Crea, edita y controla el estado de las zonas de riesgo registradas en la plataforma.
+          </p>
+        </div>
+        <span class="dashboard-card__cta">Ir a gestión →</span>
+      </a>
+    }
+  </div>
+</div>

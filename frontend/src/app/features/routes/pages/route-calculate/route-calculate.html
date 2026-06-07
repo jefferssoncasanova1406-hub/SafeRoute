@@ -1,0 +1,293 @@
+<section class="page route-page">
+  <header class="app-page-header">
+    <div>
+      <p class="app-page-header__eyebrow">Trayectos</p>
+      <h1>Planifica tu ruta</h1>
+      <p>
+        Define origen y destino para comparar las alternativas disponibles y tomar una decisión
+        con más información.
+      </p>
+    </div>
+
+    <div class="app-page-header__actions">
+      <button class="button button--secondary" type="button" (click)="loadDemoRoute()">
+        Cargar ejemplo
+      </button>
+      <a class="button button--ghost" routerLink="/app/zonas">
+        Ver zonas activas
+      </a>
+    </div>
+  </header>
+
+  <section class="split-layout route-layout">
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Origen y destino</span>
+        <h2 class="panel__title">Define tu trayecto</h2>
+        <p class="panel__copy">
+          Usa referencias conocidas y coordenadas para describir con precisión el recorrido.
+        </p>
+      </div>
+
+      <div class="panel__body">
+        <form class="form-grid" [formGroup]="routeForm" (ngSubmit)="calculateRoute()" novalidate>
+          <section class="data-card">
+            <span class="subtle-label">Origen</span>
+
+            <div class="field">
+              <label for="originReference">Referencia</label>
+              <input
+                id="originReference"
+                class="control"
+                type="text"
+                formControlName="originReference"
+                placeholder="Ej. Av. Arequipa 2450, Lince"
+              />
+              @if (hasRouteError('originReference')) {
+                <p class="field-error" role="alert">La referencia del origen es obligatoria.</p>
+              }
+            </div>
+
+            <div class="field-grid field-grid--2">
+              <div class="field">
+                <label for="originLatitude">Latitud</label>
+                <input
+                  id="originLatitude"
+                  class="control"
+                  type="number"
+                  step="0.0000001"
+                  formControlName="originLatitude"
+                  placeholder="-12.0464000"
+                />
+                @if (hasRouteError('originLatitude')) {
+                  <p class="field-error" role="alert">La latitud debe estar entre -90 y 90.</p>
+                }
+              </div>
+
+              <div class="field">
+                <label for="originLongitude">Longitud</label>
+                <input
+                  id="originLongitude"
+                  class="control"
+                  type="number"
+                  step="0.0000001"
+                  formControlName="originLongitude"
+                  placeholder="-77.0428000"
+                />
+                @if (hasRouteError('originLongitude')) {
+                  <p class="field-error" role="alert">La longitud debe estar entre -180 y 180.</p>
+                }
+              </div>
+            </div>
+          </section>
+
+          <section class="data-card">
+            <span class="subtle-label">Destino</span>
+
+            <div class="field">
+              <label for="destinationReference">Referencia</label>
+              <input
+                id="destinationReference"
+                class="control"
+                type="text"
+                formControlName="destinationReference"
+                placeholder="Ej. Av. Javier Prado Este 4200, San Borja"
+              />
+              @if (hasRouteError('destinationReference')) {
+                <p class="field-error" role="alert">La referencia del destino es obligatoria.</p>
+              }
+            </div>
+
+            <div class="field-grid field-grid--2">
+              <div class="field">
+                <label for="destinationLatitude">Latitud</label>
+                <input
+                  id="destinationLatitude"
+                  class="control"
+                  type="number"
+                  step="0.0000001"
+                  formControlName="destinationLatitude"
+                  placeholder="-12.1211000"
+                />
+                @if (hasRouteError('destinationLatitude')) {
+                  <p class="field-error" role="alert">La latitud debe estar entre -90 y 90.</p>
+                }
+              </div>
+
+              <div class="field">
+                <label for="destinationLongitude">Longitud</label>
+                <input
+                  id="destinationLongitude"
+                  class="control"
+                  type="number"
+                  step="0.0000001"
+                  formControlName="destinationLongitude"
+                  placeholder="-77.0305000"
+                />
+                @if (hasRouteError('destinationLongitude')) {
+                  <p class="field-error" role="alert">La longitud debe estar entre -180 y 180.</p>
+                }
+              </div>
+            </div>
+          </section>
+
+          @if (requestError(); as errorMessage) {
+            <div class="notice notice--error" role="alert">
+              <strong>No se pudo calcular el trayecto.</strong>
+              <p>{{ errorMessage }}</p>
+            </div>
+          }
+
+          <div class="button-row">
+            <button class="button" type="submit" [disabled]="isSubmitting()">
+              {{ isSubmitting() ? 'Calculando...' : 'Buscar opciones' }}
+            </button>
+            <button class="button button--secondary" type="button" (click)="loadDemoRoute()">
+              Cargar ejemplo
+            </button>
+          </div>
+        </form>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Resultado</span>
+        <h2 class="panel__title">Compara tus alternativas</h2>
+        <p class="panel__copy">
+          Revisa cada opción y entiende cuál se adapta mejor a tu recorrido de hoy.
+        </p>
+      </div>
+
+      <div class="panel__body route-report-body">
+        @if (routeResult(); as result) {
+          <section class="route-summary-card">
+            <div class="route-summary-card__top">
+              <div class="route-summary-card__copy">
+                <span class="subtle-label">Opción sugerida</span>
+                <h3>{{ result.recomendacion }}</h3>
+                <p>
+                  De <strong>{{ routeForm.controls.originReference.value }}</strong>
+                  hacia <strong>{{ routeForm.controls.destinationReference.value }}</strong>.
+                </p>
+              </div>
+              <span [class]="'badge badge--' + routeTone(recommendedRoute())">
+                Riesgo {{ riskLevelLabel(result.nivelRiesgo) }}
+              </span>
+            </div>
+
+            <div class="metric-grid">
+              @for (metric of routeHealth(); track metric.label) {
+                <article class="metric-tile">
+                  <span class="metric-tile__label">{{ metric.label }}</span>
+                  <strong class="metric-tile__value">{{ metric.value }}</strong>
+                </article>
+              }
+            </div>
+          </section>
+
+          @if (routePreview(); as preview) {
+            <section class="svg-frame route-preview-frame">
+              <svg viewBox="0 0 100 100" role="img" aria-label="Vista simplificada de las rutas calculadas">
+                <defs>
+                  <filter id="routeGlow">
+                    <feGaussianBlur stdDeviation="1.4" result="blur"></feGaussianBlur>
+                    <feMerge>
+                      <feMergeNode in="blur"></feMergeNode>
+                      <feMergeNode in="SourceGraphic"></feMergeNode>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                @for (line of preview.lines; track line.key) {
+                  <polyline
+                    [class]="'route-line route-line--' + line.key"
+                    [attr.points]="line.points"
+                    fill="none"
+                    filter="url(#routeGlow)"
+                  ></polyline>
+                }
+
+                <circle
+                  class="route-marker route-marker--origin"
+                  [attr.cx]="preview.origin.split(',')[0]"
+                  [attr.cy]="preview.origin.split(',')[1]"
+                  r="2.8"
+                ></circle>
+                <circle
+                  class="route-marker route-marker--destination"
+                  [attr.cx]="preview.destination.split(',')[0]"
+                  [attr.cy]="preview.destination.split(',')[1]"
+                  r="2.8"
+                ></circle>
+              </svg>
+            </section>
+          }
+
+          <section class="card-grid route-card-grid">
+            @for (card of routeCards(); track trackByRouteKey($index, card)) {
+              <article [class]="'list-card route-option-card route-option-card--' + card.key">
+                <div class="list-card__top">
+                  <div>
+                    <span class="subtle-label">{{ card.label }}</span>
+                    <h4 class="list-card__title">{{ card.title }}</h4>
+                  </div>
+                  <span [class]="'badge badge--' + card.tone">
+                    {{ card.option.nivelRiesgo }}
+                  </span>
+                </div>
+                <p class="list-card__copy">{{ card.note }}</p>
+                <div class="pill-list">
+                  <span class="tag">{{ card.option.distancia }} m</span>
+                  <span class="tag">{{ card.option.tiempoEstimado }} min</span>
+                  <span class="tag">{{ card.option.scoreRiesgo }} / 100</span>
+                </div>
+              </article>
+            }
+          </section>
+
+          <section class="panel panel--soft risk-zones-inline">
+            <div class="panel__header">
+              <span class="panel__kicker">Entorno</span>
+              <h3 class="panel__title">Zonas cercanas al trayecto sugerido</h3>
+            </div>
+
+            <div class="panel__body">
+              @if (recommendedRiskZones().length > 0) {
+                <div class="card-grid risk-zone-inline-grid">
+                  @for (zone of recommendedRiskZones(); track zone.idZona) {
+                    <article class="list-card">
+                      <div class="list-card__top">
+                        <div>
+                          <span class="subtle-label">{{ zone.tipo }}</span>
+                          <h4 class="list-card__title">{{ zone.centro.distrito }}</h4>
+                        </div>
+                        <span [class]="'badge badge--' + routeTone(recommendedRoute())">
+                          {{ zone.nivelRiesgoNombre }}
+                        </span>
+                      </div>
+                      <p class="list-card__copy">{{ zone.descripcion }}</p>
+                      <div class="pill-list">
+                        <span class="tag">{{ zone.centro.ciudad }}</span>
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <h3>Sin cruces de riesgo registrados</h3>
+                  <p>La alternativa sugerida no intersecta zonas activas conocidas.</p>
+                </div>
+              }
+            </div>
+          </section>
+        } @else {
+          <div class="empty-state">
+            <h3>Aún no hay resultados</h3>
+            <p>Completa el formulario y haz clic en "Buscar opciones" para ver la comparación.</p>
+          </div>
+        }
+      </div>
+    </article>
+  </section>
+</section>

@@ -1,0 +1,113 @@
+:host {
+  display: block;
+}
+
+.route-hero-grid > .panel:first-child {
+  grid-column: span 7;
+}
+
+.route-hero-grid > .panel:last-child {
+  grid-column: span 5;
+}
+
+.route-intro-card__body {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.route-session-stack,
+.route-report-body,
+.route-summary-card,
+.risk-zone-inline-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.route-summary-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.route-summary-card__copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.route-summary-card__copy h3 {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  line-height: 1.08;
+}
+
+.route-preview-frame {
+  padding: 0.9rem;
+}
+
+.route-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  opacity: 0.96;
+}
+
+.route-line--fastest {
+  stroke: #cb7a1f;
+  stroke-dasharray: 4 4;
+}
+
+.route-line--safest {
+  stroke: #0f6c78;
+  stroke-width: 3.2;
+}
+
+.route-line--recommended {
+  stroke: #142331;
+  stroke-width: 3.8;
+}
+
+.route-marker {
+  stroke: rgba(255, 255, 255, 0.96);
+  stroke-width: 1.5;
+}
+
+.route-marker--origin {
+  fill: #0f6c78;
+}
+
+.route-marker--destination {
+  fill: #cb7a1f;
+}
+
+.route-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.route-option-card {
+  border-width: 1px;
+}
+
+.route-option-card--recommended {
+  background: linear-gradient(180deg, rgba(216, 238, 240, 0.7), rgba(255, 255, 255, 0.8));
+}
+
+.risk-zones-inline {
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  .route-hero-grid > .panel:first-child,
+  .route-hero-grid > .panel:last-child {
+    grid-column: span 1;
+  }
+
+  .route-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .route-summary-card__top {
+    flex-direction: column;
+  }
+}
