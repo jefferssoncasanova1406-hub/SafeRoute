@@ -1,0 +1,67 @@
+<section class="page overview-page">
+  <header class="app-page-header">
+    <div>
+      <p class="app-page-header__eyebrow">Inicio</p>
+      <h1>Inicio</h1>
+      <p>
+        Bienvenido a SafeRoute. Desde aqui puedes entrar a los trayectos, revisar zonas activas
+        o continuar con la gestion de informacion segun tu perfil.
+      </p>
+    </div>
+    <div class="app-page-header__actions">
+      <a class="button" routerLink="/rutas-seguras">Planificar trayecto</a>
+    </div>
+  </header>
+
+  <section class="panel overview-summary">
+    <div class="panel__body">
+      <div class="metric-grid">
+        <article class="metric-tile">
+          <span class="metric-tile__label">Acceso rapido</span>
+          <strong class="metric-tile__value">Inicio</strong>
+        </article>
+        <article class="metric-tile">
+          <span class="metric-tile__label">Vistas activas</span>
+          <strong class="metric-tile__value">4</strong>
+        </article>
+        <article class="metric-tile">
+          <span class="metric-tile__label">Enfoque</span>
+          <strong class="metric-tile__value">Movilidad segura</strong>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__header">
+      <span class="panel__kicker">Recorrido</span>
+      <h2 class="panel__title">Que hacer primero y que hacer despues</h2>
+      <p class="panel__copy">
+        La aplicacion se organiza en un recorrido simple para evitar saltos entre pantallas sin contexto.
+      </p>
+    </div>
+    <div class="panel__body flow-grid">
+      @for (step of flow; track step.order) {
+        <article class="flow-card">
+          <span class="flow-card__order">{{ step.order }}</span>
+          <div class="flow-card__content">
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.copy }}</p>
+          </div>
+          <a class="button button--secondary" [routerLink]="step.route">{{ step.cta }}</a>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="card-grid module-grid">
+    @for (module of modules; track module.title) {
+      <article class="list-card module-card">
+        <span class="badge badge--brand">{{ module.badge }}</span>
+        <h3 class="list-card__title">{{ module.title }}</h3>
+        <p class="list-card__copy">{{ module.copy }}</p>
+        <a class="button button--ghost" [routerLink]="module.route">Abrir</a>
+      </article>
+    }
+  </section>
+</section>

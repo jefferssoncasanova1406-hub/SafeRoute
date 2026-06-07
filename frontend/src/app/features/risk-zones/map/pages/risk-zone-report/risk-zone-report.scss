@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.atlas-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.atlas-frame {
+  padding: 0.8rem;
+}
+
+.atlas-polygon {
+  cursor: pointer;
+  stroke-width: 0.8;
+  fill-opacity: 0.28;
+  transition:
+    fill-opacity 0.2s ease,
+    transform 0.2s ease,
+    stroke-width 0.2s ease;
+}
+
+.atlas-polygon:hover,
+.atlas-polygon.is-selected {
+  fill-opacity: 0.45;
+  stroke-width: 1.4;
+}
+
+.atlas-center {
+  fill: #142331;
+  opacity: 0.74;
+}
+
+.atlas-center.is-selected {
+  fill: #cb7a1f;
+  opacity: 1;
+}
+
+.zone-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.zone-summary-card {
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .zone-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

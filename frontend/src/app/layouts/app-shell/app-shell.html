@@ -1,0 +1,54 @@
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Menú de la aplicación">
+    <a class="sidebar__brand" routerLink="/inicio" aria-label="SafeRoute — ir al inicio">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="sidebar__brand-name">SafeRoute</span>
+    </a>
+
+    <nav class="sidebar__nav" aria-label="Secciones principales">
+      <a
+        class="sidebar__item"
+        routerLink="/app/panel"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span class="sidebar__item-label">Panel</span>
+      </a>
+      <a class="sidebar__item" routerLink="/app/rutas" routerLinkActive="is-active">
+        <span class="sidebar__item-label">Rutas</span>
+        <small>Planifica tus trayectos</small>
+      </a>
+      <a class="sidebar__item" routerLink="/app/zonas" routerLinkActive="is-active">
+        <span class="sidebar__item-label">Zonas activas</span>
+        <small>Estado actual de la ciudad</small>
+      </a>
+      @if (isAdmin()) {
+        <a class="sidebar__item sidebar__item--admin" routerLink="/admin/zonas" routerLinkActive="is-active">
+          <span class="sidebar__item-label">Administración</span>
+          <small>Gestión de zonas</small>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__footer">
+      @if (session(); as s) {
+        <div class="sidebar__user" aria-label="Cuenta activa">
+          <div class="sidebar__user-avatar" aria-hidden="true">
+            {{ s.user.nombre.charAt(0).toUpperCase() }}
+          </div>
+          <div class="sidebar__user-info">
+            <span class="sidebar__user-name">{{ s.user.nombre }}</span>
+            <span class="sidebar__user-role">{{ s.user.rol }}</span>
+          </div>
+        </div>
+      }
+      <button class="sidebar__logout" type="button" (click)="logout()">
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="app-content" id="main-content">
+    <router-outlet />
+  </main>
+</div>

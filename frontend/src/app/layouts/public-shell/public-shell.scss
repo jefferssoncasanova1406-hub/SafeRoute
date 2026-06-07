@@ -1,0 +1,91 @@
+:host {
+  display: contents;
+}
+
+.public-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pub-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 2.5rem;
+  border-bottom: 1px solid var(--line);
+  background: rgba(251, 248, 242, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.pub-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pub-header__brand-name {
+  color: var(--ink-strong);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pub-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pub-nav__link {
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-size: 0.93rem;
+  font-weight: 700;
+  transition: color 0.18s ease;
+
+  &:hover {
+    color: var(--ink-strong);
+  }
+}
+
+.pub-nav__cta {
+  min-height: 2.6rem;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.92rem;
+}
+
+.pub-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-mark {
+  display: block;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.65), transparent 40%),
+    linear-gradient(135deg, var(--brand), var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 640px) {
+  .pub-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .pub-nav__link {
+    display: none;
+  }
+}

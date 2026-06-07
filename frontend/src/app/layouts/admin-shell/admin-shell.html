@@ -1,0 +1,43 @@
+<div class="admin-shell">
+  <aside class="admin-sidebar" aria-label="Menú de administración">
+    <div class="admin-sidebar__top">
+      <a class="admin-brand" routerLink="/inicio" aria-label="SafeRoute — ir al inicio">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="admin-brand__text">
+          <span class="admin-brand__name">SafeRoute</span>
+          <span class="admin-brand__tag">Admin</span>
+        </div>
+      </a>
+    </div>
+
+    <nav class="admin-nav" aria-label="Secciones de administración">
+      <a class="admin-nav__item" routerLink="/admin/zonas" routerLinkActive="is-active">
+        <span class="admin-nav__label">Gestión de zonas</span>
+        <small>Crear, editar y controlar estados</small>
+      </a>
+      <a class="admin-nav__item admin-nav__item--back" routerLink="/app/panel">
+        <span class="admin-nav__label">Volver a la app</span>
+        <small>Panel de usuario</small>
+      </a>
+    </nav>
+
+    <div class="admin-sidebar__footer">
+      @if (session(); as s) {
+        <div class="admin-user">
+          <div class="admin-user__avatar" aria-hidden="true">
+            {{ s.user.nombre.charAt(0).toUpperCase() }}
+          </div>
+          <div class="admin-user__info">
+            <span class="admin-user__name">{{ s.user.nombre }}</span>
+            <span class="admin-user__role">{{ s.user.rol }}</span>
+          </div>
+        </div>
+      }
+      <button class="admin-logout" type="button" (click)="logout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="admin-content" id="main-content">
+    <router-outlet />
+  </main>
+</div>

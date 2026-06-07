@@ -1,1 +1,51 @@
-<router-outlet></router-outlet>
+<div class="app-shell">
+  <aside class="shell-sidebar">
+    <a class="brand" routerLink="/inicio">
+      <span class="brand__mark"></span>
+      <span class="brand__copy">
+        <strong>SafeRoute</strong>
+        <small>Movilidad segura en la ciudad</small>
+      </span>
+    </a>
+
+    <div class="shell-sidebar__intro">
+      <span class="badge badge--brand">SafeRoute</span>
+      <p>Una sola navegacion, un solo lenguaje y un recorrido claro entre las pantallas.</p>
+    </div>
+
+    <nav class="shell-nav" aria-label="Navegacion principal">
+      @for (group of navigation; track group.title) {
+        <section class="shell-nav__group">
+          <p class="shell-nav__title">{{ group.title }}</p>
+          @for (item of group.items; track item.path) {
+            <a
+              class="shell-nav__link"
+              [routerLink]="item.path"
+              routerLinkActive="is-active"
+            >
+              <span class="shell-nav__label">{{ item.label }}</span>
+              <small>{{ item.note }}</small>
+            </a>
+          }
+        </section>
+      }
+    </nav>
+  </aside>
+
+  <div class="shell-content">
+    <header class="shell-topbar">
+      <div>
+        <p class="shell-topbar__eyebrow">Centro de navegacion</p>
+        <h1>Trayectos, zonas y gestion en una misma experiencia</h1>
+      </div>
+      <div class="shell-topbar__meta">
+        <span class="badge badge--accent">5 vistas principales</span>
+        <span class="badge badge--brand">Cuenta, rutas, zonas y control</span>
+      </div>
+    </header>
+
+    <main class="shell-main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
