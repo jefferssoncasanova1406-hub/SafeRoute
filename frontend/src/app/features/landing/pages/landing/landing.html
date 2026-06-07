@@ -1,0 +1,179 @@
+<div class="landing">
+
+  <!-- HERO -->
+  <section class="landing-hero" aria-labelledby="landing-headline">
+    <div class="landing-hero__content">
+      <span class="eyebrow">Movilidad urbana consciente</span>
+      <h1 id="landing-headline" class="landing-hero__headline">
+        Muévete<br>con más<br>claridad.
+      </h1>
+      <p class="landing-hero__lede">
+        SafeRoute analiza el entorno de tu ciudad y te presenta las mejores alternativas
+        para llegar a donde necesitas, considerando tiempo y contexto de cada recorrido.
+      </p>
+      <div class="landing-hero__actions">
+        <a class="button landing-hero__cta" routerLink="/crear-cuenta">Empezar ahora</a>
+        <a class="button button--ghost" routerLink="/iniciar-sesion">Ya tengo cuenta</a>
+      </div>
+    </div>
+
+    <div class="landing-hero__visual" aria-hidden="true">
+      <div class="landing-visual-card">
+        <div class="landing-visual-card__label">
+          <span class="subtle-label" style="color:rgba(255,255,255,0.5)">Vista de trayecto</span>
+        </div>
+        <svg class="landing-visual-svg" viewBox="0 0 560 380" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Visualización de rutas calculadas">
+          <defs>
+            <pattern id="city-grid" width="56" height="56" patternUnits="userSpaceOnUse">
+              <path d="M 56 0 L 0 0 0 56" fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="1"/>
+            </pattern>
+            <filter id="node-glow">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <rect width="560" height="380" fill="url(#city-grid)"/>
+
+          <!-- Risk zone -->
+          <circle cx="292" cy="175" r="66" fill="rgba(203,122,31,0.09)" stroke="rgba(203,122,31,0.26)" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="257" y="165" fill="rgba(203,122,31,0.65)" font-size="9.5" font-family="Manrope,sans-serif" font-weight="700">Zona activa</text>
+
+          <!-- Fastest route (amber dashed) -->
+          <polyline points="72,192 172,84 392,84 292,175 482,192" fill="none" stroke="#cb7a1f" stroke-width="2" stroke-dasharray="9 5" opacity="0.6"/>
+
+          <!-- Safest route (muted) -->
+          <polyline points="72,192 188,312 332,276 448,352 482,192" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5" opacity="0.55"/>
+
+          <!-- Recommended route (teal, prominent) -->
+          <polyline points="72,192 292,175 482,192" fill="none" stroke="#0f6c78" stroke-width="3.5" opacity="0.92"/>
+
+          <!-- Intersection nodes -->
+          <circle cx="172" cy="84" r="4" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.42)" stroke-width="1"/>
+          <circle cx="392" cy="84" r="4" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.42)" stroke-width="1"/>
+          <circle cx="292" cy="175" r="6" fill="rgba(203,122,31,0.48)" stroke="rgba(203,122,31,0.7)" stroke-width="1.5" filter="url(#node-glow)"/>
+          <circle cx="188" cy="312" r="3.5" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.38)" stroke-width="1"/>
+          <circle cx="332" cy="276" r="3.5" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.38)" stroke-width="1"/>
+          <circle cx="448" cy="352" r="3.5" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.38)" stroke-width="1"/>
+
+          <!-- Origin marker -->
+          <circle cx="72" cy="192" r="9" fill="#0d1e2b" stroke="#0f6c78" stroke-width="2.5"/>
+          <circle cx="72" cy="192" r="3.5" fill="#0f6c78" filter="url(#node-glow)"/>
+
+          <!-- Destination marker -->
+          <circle cx="482" cy="192" r="9" fill="#0d1e2b" stroke="#cb7a1f" stroke-width="2.5"/>
+          <circle cx="482" cy="192" r="3.5" fill="#cb7a1f" filter="url(#node-glow)"/>
+
+          <!-- Labels -->
+          <text x="50" y="218" fill="rgba(255,255,255,0.5)" font-size="11" font-family="Manrope,sans-serif" font-weight="700">Origen</text>
+          <text x="459" y="218" fill="rgba(255,255,255,0.5)" font-size="11" font-family="Manrope,sans-serif" font-weight="700">Destino</text>
+
+          <!-- Legend -->
+          <line x1="330" y1="346" x2="353" y2="346" stroke="#0f6c78" stroke-width="3"/>
+          <text x="359" y="350" fill="rgba(255,255,255,0.5)" font-size="10" font-family="Manrope,sans-serif">Recomendada</text>
+          <line x1="330" y1="362" x2="353" y2="362" stroke="#cb7a1f" stroke-width="2" stroke-dasharray="5 3"/>
+          <text x="359" y="366" fill="rgba(255,255,255,0.5)" font-size="10" font-family="Manrope,sans-serif">Más rápida</text>
+        </svg>
+        <div class="landing-visual-card__chips">
+          <span class="landing-chip">3 opciones calculadas</span>
+          <span class="landing-chip">Tiempo y contexto</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="landing-features" aria-labelledby="features-heading">
+    <h2 id="features-heading" class="sr-only">Características principales</h2>
+    <div class="landing-features__grid">
+      <article class="landing-feature">
+        <div class="landing-feature__icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M4 14h20M4 14l6-6M4 14l6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="14" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <h3>Compara tus opciones</h3>
+        <p>Ve la alternativa más rápida, la más tranquila y la recomendada, con datos reales de distancia, tiempo y contexto.</p>
+      </article>
+
+      <article class="landing-feature">
+        <div class="landing-feature__icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect x="5" y="5" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+            <circle cx="14" cy="14" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M14 5v3M14 20v3M5 14h3M20 14h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Zonas en contexto</h3>
+        <p>Consulta el estado de las áreas activas en tu ciudad antes de moverte. Información actualizada y fácil de leer.</p>
+      </article>
+
+      <article class="landing-feature">
+        <div class="landing-feature__icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M14 4C8.477 4 4 8.477 4 14s4.477 10 10 10 10-4.477 10-10S19.523 4 14 4z" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M14 10v4l3 3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Decisiones a tiempo</h3>
+        <p>Sin terminología confusa. Solo la información que necesitas para elegir mejor tu recorrido antes de salir.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="landing-steps" aria-labelledby="steps-heading">
+    <div class="landing-steps__header">
+      <span class="eyebrow">Así funciona</span>
+      <h2 id="steps-heading" class="landing-steps__title">Tres pasos.<br>Un trayecto mejor.</h2>
+    </div>
+
+    <div class="landing-steps__grid">
+      <div class="landing-step">
+        <span class="landing-step__num" aria-hidden="true">01</span>
+        <div class="landing-step__content">
+          <h3>Crea tu cuenta</h3>
+          <p>Regístrate en menos de un minuto y accede a todas las funciones de la plataforma.</p>
+        </div>
+      </div>
+
+      <div class="landing-step">
+        <span class="landing-step__num" aria-hidden="true">02</span>
+        <div class="landing-step__content">
+          <h3>Define tu trayecto</h3>
+          <p>Ingresa tu punto de partida y tu destino. SafeRoute calcula las mejores alternativas disponibles.</p>
+        </div>
+      </div>
+
+      <div class="landing-step">
+        <span class="landing-step__num" aria-hidden="true">03</span>
+        <div class="landing-step__content">
+          <h3>Elige tu camino</h3>
+          <p>Compara las opciones y decide con más información cuál trayecto tomar hoy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="landing-cta" aria-labelledby="cta-heading">
+    <article class="landing-cta-card panel panel--dark">
+      <div class="landing-cta-card__body">
+        <div class="landing-cta-card__text">
+          <span class="eyebrow" style="color:rgba(255,255,255,0.55)">Acceso gratuito</span>
+          <h2 id="cta-heading">Empieza a moverte con más criterio.</h2>
+          <p>
+            Crea tu cuenta y accede a rutas calculadas, zonas en contexto
+            y una experiencia diseñada para la movilidad en la ciudad.
+          </p>
+        </div>
+        <div class="landing-cta-card__actions">
+          <a class="button landing-cta-card__btn" routerLink="/crear-cuenta">Crear cuenta</a>
+          <a class="button button--secondary landing-cta-card__btn-secondary" routerLink="/iniciar-sesion">Iniciar sesión</a>
+        </div>
+      </div>
+    </article>
+  </section>
+
+</div>

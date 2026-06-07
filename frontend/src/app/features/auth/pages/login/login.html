@@ -1,0 +1,85 @@
+<div class="auth-split">
+  <div class="auth-split__form">
+    <div class="auth-form-box">
+      <a class="auth-back" routerLink="/inicio" aria-label="Volver al inicio">
+        ← Inicio
+      </a>
+
+      <header class="auth-form-header">
+        <h1>Bienvenido de nuevo</h1>
+        <p>Ingresa con tu cuenta para continuar con tus trayectos.</p>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form-grid">
+        <div class="field">
+          <label for="login-email">Correo electrónico</label>
+          <input
+            id="login-email"
+            class="control"
+            type="email"
+            formControlName="email"
+            placeholder="tu@correo.com"
+            autocomplete="email"
+          />
+          @if (hasError('email')) {
+            <p class="field-error" role="alert">Ingresa un correo con formato válido.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="login-password">Contraseña</label>
+          <input
+            id="login-password"
+            class="control"
+            type="password"
+            formControlName="password"
+            placeholder="Tu contraseña"
+            autocomplete="current-password"
+          />
+          @if (hasError('password')) {
+            <p class="field-error" role="alert">La contraseña es obligatoria.</p>
+          }
+        </div>
+
+        @if (loginError(); as err) {
+          <div class="notice notice--error" role="alert">
+            <strong>No pudimos iniciar sesión.</strong>
+            <p>{{ err }}</p>
+          </div>
+        }
+
+        <button class="button auth-submit" type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Ingresando...' : 'Iniciar sesión' }}
+        </button>
+      </form>
+
+      <p class="auth-footer-text">
+        ¿Aún no tienes cuenta?
+        <a class="auth-footer-link" routerLink="/crear-cuenta">Crear cuenta</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="auth-split__visual panel panel--dark" aria-hidden="true">
+    <div class="auth-visual-body">
+      <div class="auth-visual-ring auth-visual-ring--large"></div>
+      <div class="auth-visual-ring auth-visual-ring--small"></div>
+
+      <div class="auth-visual-card auth-visual-card--main">
+        <span class="subtle-label" style="color:rgba(255,255,255,0.5)">Rutas calculadas</span>
+        <strong>3 alternativas</strong>
+        <p>Rápida, segura y recomendada para cada trayecto.</p>
+      </div>
+
+      <div class="auth-visual-card auth-visual-card--accent">
+        <strong>Zonas activas</strong>
+        <small>Contexto en tiempo real de tu ciudad</small>
+      </div>
+
+      <div class="auth-visual-copy">
+        <h2>Tu trayecto con más criterio</h2>
+        <p>Accede a rutas calculadas y zonas activas para moverte mejor por la ciudad.</p>
+      </div>
+    </div>
+  </div>
+</div>

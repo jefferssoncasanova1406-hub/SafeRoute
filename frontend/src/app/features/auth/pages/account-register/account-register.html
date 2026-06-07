@@ -1,0 +1,129 @@
+<div class="auth-split register-split">
+  <div class="auth-split__form">
+    <div class="auth-form-box">
+      <a class="auth-back" routerLink="/inicio" aria-label="Volver al inicio">
+        ← Inicio
+      </a>
+
+      <header class="auth-form-header">
+        <h1>Crea tu cuenta</h1>
+        <p>Regístrate para empezar a planificar tus trayectos.</p>
+      </header>
+
+      <form [formGroup]="registerForm" (ngSubmit)="submit()" novalidate class="form-grid">
+        <div class="field">
+          <label for="nombre">Nombre completo</label>
+          <input
+            id="nombre"
+            class="control"
+            type="text"
+            formControlName="nombre"
+            placeholder="Tu nombre y apellido"
+            autocomplete="name"
+          />
+          @if (hasError('nombre')) {
+            <p class="field-error" role="alert">El nombre debe tener entre 2 y 100 caracteres.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-email">Correo electrónico</label>
+          <input
+            id="register-email"
+            class="control"
+            type="email"
+            formControlName="email"
+            placeholder="tu@correo.com"
+            autocomplete="email"
+          />
+          @if (hasError('email')) {
+            <p class="field-error" role="alert">Ingresa un correo con formato válido.</p>
+          }
+        </div>
+
+        <div class="field-grid field-grid--2">
+          <div class="field">
+            <label for="register-password">Contraseña</label>
+            <input
+              id="register-password"
+              class="control"
+              type="password"
+              formControlName="password"
+              placeholder="Mínimo 8 caracteres"
+              autocomplete="new-password"
+            />
+            @if (hasError('password')) {
+              <p class="field-error" role="alert">La contraseña debe tener al menos 8 caracteres.</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="confirm-password">Confirmar contraseña</label>
+            <input
+              id="confirm-password"
+              class="control"
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="Repite la contraseña"
+              autocomplete="new-password"
+            />
+            @if (hasError('confirmPassword')) {
+              <p class="field-error" role="alert">Confirma la contraseña ingresada.</p>
+            } @else if (hasPasswordMismatch()) {
+              <p class="field-error" role="alert">Las contraseñas deben coincidir.</p>
+            }
+          </div>
+        </div>
+
+        @if (registerError(); as errorMessage) {
+          <div class="notice notice--error" role="alert">
+            <strong>No se pudo crear la cuenta.</strong>
+            <p>{{ errorMessage }}</p>
+          </div>
+        }
+
+        @if (registerSuccess(); as success) {
+          <div class="notice notice--success" role="status">
+            <strong>Cuenta creada correctamente.</strong>
+            <p>Bienvenido, {{ success.user.nombre }}. Ya puedes iniciar sesión.</p>
+          </div>
+        }
+
+        <button class="button auth-submit" type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Creando cuenta...' : 'Crear cuenta' }}
+        </button>
+      </form>
+
+      <p class="auth-footer-text">
+        ¿Ya tienes cuenta?
+        <a class="auth-footer-link" routerLink="/iniciar-sesion">Iniciar sesión</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="auth-split__visual panel panel--dark" aria-hidden="true">
+    <div class="auth-visual-body">
+      <div class="auth-visual-ring auth-visual-ring--large"></div>
+      <div class="auth-visual-ring auth-visual-ring--small"></div>
+
+      <div class="auth-visual-card auth-visual-card--main">
+        <span class="subtle-label" style="color:rgba(255,255,255,0.5)">Tu perfil</span>
+        <strong>Cuenta lista</strong>
+        <p>Preparada para rutas, zonas y todo el contexto que necesitas.</p>
+      </div>
+
+      <div class="auth-visual-card auth-visual-card--accent">
+        <strong>Acceso inmediato</strong>
+        <small>Empieza a planificar desde el primer inicio</small>
+      </div>
+
+      <div class="auth-visual-copy">
+        <h2>Una entrada simple, un recorrido mejor</h2>
+        <p>
+          Crea tu cuenta una sola vez. Desde ahí, todo el contexto de la ciudad
+          está disponible cuando lo necesitas.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
