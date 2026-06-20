@@ -35,6 +35,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
+    @ExceptionHandler(RouteApiException.class)
+    public ResponseEntity<ApiErrorDTO> handleRouteApiException(
+            RouteApiException exception,
+            HttpServletRequest request) {
+        HttpStatus status = exception.getStatus();
+        if (status.is5xxServerError()) {
+            log.error("Error controlado de rutas status={} code={} path={} message={}",
+                    status.value(),
+                    exception.getErrorCode(),
+                    request.getRequestURI(),
+                    exception.getMessage());
+        } else {
+            log.warn("Error controlado de rutas status={} code={} path={} message={}",
+                    status.value(),
+                    exception.getErrorCode(),
+                    request.getRequestURI(),
+                    exception.getMessage());
+        }
+
+        ApiErrorDTO error = buildErrorWithCode(
+                status,
+                exception.getErrorCode(),
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorDTO> handleValidationException(
             MethodArgumentNotValidException exception,
@@ -315,6 +342,16 @@ public class GlobalExceptionHandler {
 
     private ApiErrorDTO buildError(HttpStatus status, String message, String path) {
         return buildError(status, message, null, path);
+    }
+
+    private ApiErrorDTO buildErrorWithCode(HttpStatus status, String errorCode, String message, String path) {
+        return ApiErrorDTO.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(errorCode)
+                .message(message)
+                .path(path)
+                .build();
     }
 
     private ApiErrorDTO buildError(
