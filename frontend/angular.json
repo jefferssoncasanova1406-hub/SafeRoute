@@ -29,7 +29,8 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "allowedCommonJsDependencies": ["mapbox-gl"],
+            "styles": ["src/styles.scss", "node_modules/mapbox-gl/dist/mapbox-gl.css"]
           },
           "configurations": {
             "production": {
