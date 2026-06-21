@@ -16,6 +16,7 @@ import { RouterLink } from '@angular/router';
 import mapboxgl from 'mapbox-gl';
 import { finalize } from 'rxjs';
 
+import { appRuntimeConfig } from '../../../../core/config/runtime-config';
 import { RouteService } from '../../../../core/services/route.service';
 import { RouteRequest, TransportMode } from '../../models/route-request.model';
 import {
@@ -62,9 +63,6 @@ interface RouteLineFeatureCollection {
 const ROUTE_SOURCE_ID = 'evaluated-route';
 const ROUTE_LAYER_ID = 'evaluated-route-line';
 const DEFAULT_CENTER: [number, number] = [-77.0428, -12.0464];
-// Mapbox GL JS v3 requires a public token even when the basemap uses third-party raster tiles.
-const MAPBOX_ACCESS_TOKEN =
-  '';
 const EMPTY_ROUTE_DATA: RouteLineFeatureCollection = {
   type: 'FeatureCollection',
   features: [],
@@ -212,7 +210,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     }
 
     this.map = new mapboxgl.Map({
-      accessToken: MAPBOX_ACCESS_TOKEN,
+      accessToken: appRuntimeConfig.mapboxPublicToken,
       container: this.mapContainer.nativeElement,
       style: OSM_STYLE,
       center: DEFAULT_CENTER,
@@ -528,7 +526,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   private parseError(error: HttpErrorResponse, fallback: string): string {
     if (error.status === 0) {
-      return 'No se pudo conectar con el backend. Verifica que esté escuchando en http://localhost:8080.';
+      return `No se pudo conectar con el backend. Verifica que esté escuchando en ${appRuntimeConfig.apiBaseUrl}.`;
     }
 
     const body = error.error as ApiErrorBody | string | null;

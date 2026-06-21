@@ -10,14 +10,15 @@ import {
   RegisterRequest,
   RegisterResponse,
 } from '../../features/auth/models/register.model';
+import { appRuntimeConfig } from '../config/runtime-config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly loginUrl = 'http://localhost:8080/auth/login';
-  private readonly registerUrl = 'http://localhost:8080/auth/register';
+  private readonly loginUrl = `${appRuntimeConfig.apiBaseUrl}/auth/login`;
+  private readonly registerUrl = `${appRuntimeConfig.apiBaseUrl}/auth/register`;
   private readonly storageKey = 'saferoute_auth_session';
   private readonly sessionState = signal<LoginResponse | null>(this.readSession());
 

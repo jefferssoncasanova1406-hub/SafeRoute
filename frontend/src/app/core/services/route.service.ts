@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { RouteRequest } from '../../features/routes/models/route-request.model';
 import { RouteResponse } from '../../features/routes/models/route-response.model';
+import { appRuntimeConfig } from '../config/runtime-config';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +13,7 @@ import { RouteResponse } from '../../features/routes/models/route-response.model
 export class RouteService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
-  private readonly endpointUrl = 'http://localhost:8080/api/routes/evaluate';
+  private readonly endpointUrl = `${appRuntimeConfig.apiBaseUrl}/api/routes/evaluate`;
 
   evaluateRoute(payload: RouteRequest): Observable<RouteResponse> {
     const authorizationHeader = this.authService.getAuthorizationHeader();
