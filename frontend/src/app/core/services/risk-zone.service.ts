@@ -9,6 +9,7 @@ import {
   RiskZoneOperationResponse,
   RiskZoneRequest,
 } from '../../features/risk-zones/models/risk-zone.model';
+import { appRuntimeConfig } from '../config/runtime-config';
 
 interface RiskZoneFilters {
   estado?: string;
@@ -26,8 +27,8 @@ interface RiskZoneMapFilters {
 export class RiskZoneService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
-  private readonly managementUrl = 'http://localhost:8080/api/risk-zones';
-  private readonly mapUrl = 'http://localhost:8080/api/mapa/zonas-riesgo/activas';
+  private readonly managementUrl = `${appRuntimeConfig.apiBaseUrl}/api/risk-zones`;
+  private readonly mapUrl = `${appRuntimeConfig.apiBaseUrl}/api/mapa/zonas-riesgo/activas`;
 
   getRiskZones(filters?: RiskZoneFilters): Observable<RiskZoneListResponse> {
     let params = new HttpParams();
