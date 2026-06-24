@@ -1,0 +1,111 @@
+<section class="page privacy-page">
+  <header class="app-page-header">
+    <div>
+      <p class="app-page-header__eyebrow">Cuenta</p>
+      <h1>Privacidad</h1>
+      <p>Gestiona cómo SafeRoute usa y comparte tu información.</p>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <article class="panel">
+      <div class="panel__body">
+        <p class="privacy-loading">Cargando preferencias…</p>
+      </div>
+    </article>
+  } @else if (loadError(); as error) {
+    <div class="notice notice--error" role="alert">
+      <strong>No se pudieron cargar las preferencias.</strong>
+      <p>{{ error }}</p>
+    </div>
+    <div class="button-row">
+      <button class="button button--secondary" type="button" (click)="loadPreferences()">
+        Reintentar
+      </button>
+    </div>
+  } @else {
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Configuración</span>
+        <h2 class="panel__title">Configuración de privacidad</h2>
+        <p class="panel__copy">
+          Estos ajustes controlan cómo SafeRoute accede a tu información y la comparte.
+        </p>
+      </div>
+
+      <div class="panel__body">
+        <div class="privacy-list">
+
+          <div class="privacy-row">
+            <div class="privacy-row__info">
+              <span class="privacy-row__label">Ubicación en tiempo real</span>
+              <p class="privacy-row__description">
+                Permite que SafeRoute acceda a tu posición para calcular rutas seguras
+                y mostrarte zonas de riesgo cercanas.
+              </p>
+            </div>
+            <label class="toggle" aria-label="Ubicación en tiempo real">
+              <input
+                type="checkbox"
+                role="switch"
+                [checked]="realTimeLocation()"
+                [attr.aria-checked]="realTimeLocation()"
+                (change)="toggleRealTimeLocation($event)"
+              />
+              <span class="toggle__track" aria-hidden="true">
+                <span class="toggle__thumb"></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="privacy-row">
+            <div class="privacy-row__info">
+              <span class="privacy-row__label">Compartir datos personales</span>
+              <p class="privacy-row__description">
+                Autoriza que tus datos sean compartidos con otros servicios de SafeRoute
+                para mejorar la experiencia.
+              </p>
+            </div>
+            <label class="toggle" aria-label="Compartir datos personales">
+              <input
+                type="checkbox"
+                role="switch"
+                [checked]="personalDataSharing()"
+                [attr.aria-checked]="personalDataSharing()"
+                (change)="togglePersonalDataSharing($event)"
+              />
+              <span class="toggle__track" aria-hidden="true">
+                <span class="toggle__thumb"></span>
+              </span>
+            </label>
+          </div>
+
+        </div>
+
+        @if (saveSuccess()) {
+          <div class="notice notice--success" role="status">
+            <strong>Preferencias guardadas correctamente.</strong>
+          </div>
+        }
+
+        @if (saveError(); as error) {
+          <div class="notice notice--error" role="alert">
+            <strong>No se pudieron guardar las preferencias.</strong>
+            <p>{{ error }}</p>
+          </div>
+        }
+
+        <div class="button-row">
+          <button
+            class="button"
+            type="button"
+            [disabled]="isSaving() || isLoading()"
+            (click)="savePreferences()"
+          >
+            {{ isSaving() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </div>
+    </article>
+  }
+</section>

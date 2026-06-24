@@ -37,6 +37,13 @@ export const routes: Routes = [
             (module) => module.RouteCalculatePage,
           ),
       },
+      {
+        path: 'privacidad',
+        loadComponent: () =>
+          import('./features/privacy/pages/privacy-settings/privacy-settings').then(
+            (module) => module.PrivacySettingsPage,
+          ),
+      },
       { path: 'zonas', component: RiskZoneReportPage },
     ],
   },
