@@ -69,6 +69,14 @@ export class AuthService {
       : undefined;
   }
 
+  logout(): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${appRuntimeConfig.apiBaseUrl}/auth/logout`,
+      {},
+      { headers: this.buildAuthorizedHeaders() },
+    );
+  }
+
   private readSession(): LoginResponse | null {
     const rawSession = localStorage.getItem(this.storageKey);
 

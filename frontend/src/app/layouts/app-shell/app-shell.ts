@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { finalize } from 'rxjs';
+
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -17,7 +19,17 @@ export class AppShell {
   protected readonly isAdmin = computed(() => this.auth.isAdminSession());
 
   protected logout(): void {
-    this.auth.clearSession();
-    this.router.navigate(['/iniciar-sesion']);
+    if (!this.auth.getSession()) {
+      this.auth.clearSession();
+      this.router.navigate(['/iniciar-sesion']);
+      return;
+    }
+
+    this.auth.logout()
+      .pipe(finalize(() => {
+        this.auth.clearSession();
+        this.router.navigate(['/iniciar-sesion']);
+      }))
+      .subscribe();
   }
 }
