@@ -1,5 +1,6 @@
 package com.upc.grupo3.controllers;
 
+import com.upc.grupo3.dtos.auth.AuditLogResponseDTO;
 import com.upc.grupo3.dtos.auth.SuspendUserRequestDTO;
 import com.upc.grupo3.dtos.auth.UserReportHistoryResponseDTO;
 import com.upc.grupo3.dtos.common.AdminAccessValidationRequestDTO;
@@ -13,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -97,5 +100,17 @@ public class AdminAccessController {
 
         com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO response = authService.broadcastGlobalAlert(adminEmail, request);
         return ResponseEntity.ok(response);
+    }
+
+    // HU26 - Escenario 2 y 3: Consulta y protección del historial de auditoría interna
+    @GetMapping("/auditoria/historial")
+    public ResponseEntity<List<com.upc.grupo3.dtos.auth.AuditLogResponseDTO>> getAuditHistory(
+            Authentication authentication) {
+
+        String adminEmail = authentication != null ? authentication.getName() : null;
+        log.info("HU26 - Petición GET recibida para extraer registros de control interno.");
+
+        List<AuditLogResponseDTO> history = authService.getAdminAuditLogs(adminEmail);
+        return ResponseEntity.ok(history);
     }
 }
