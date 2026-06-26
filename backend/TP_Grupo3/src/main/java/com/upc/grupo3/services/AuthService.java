@@ -300,7 +300,7 @@ public class AuthService {
         usuarioRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        log.info("HU20 - Procesando verificación comunitaria de incidente ID [{}] por el usuario: {}",
+        log.info("Procesando verificación comunitaria de incidente ID [{}] por el usuario: {}",
                 request.getIdIncidente(), email);
 
         // Escenario 3: Bloqueo de voto duplicado (Simulación lógica para pruebas)
@@ -325,6 +325,230 @@ public class AuthService {
                 .estado("LEIDA")
                 .zonaAfectada("Zona de origen")
                 .message(mensajeResultado)
+                .build();
+    }
+
+    // HU21 - Escenario 1: Listado de reportes exclusivamente PENDIENTES para el panel
+    @Transactional(readOnly = true)
+    public java.util.List<com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO> getPendingReportsForModeration(String email) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        log.info("Administrador [{}] accediendo al panel de moderación.", email);
+
+        java.util.List<com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO> pendientes = new java.util.ArrayList<>();
+
+        // Simulamos incidentes que nacieron en estado PENDIENTE (HU19)
+        pendientes.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
+                .idAlerta(501)
+                .tipoIncidente("Robo")
+                .descripcion("Reporte ciudadano: Asalto en paradero informal.")
+                .nivelRiesgo("ALTO")
+                .fechaEmision(LocalDateTime.now().minusMinutes(30))
+                .estado("PENDIENTE")
+                .zonaAfectada("Santiago de Surco")
+                .build());
+
+        pendientes.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
+                .idAlerta(502)
+                .tipoIncidente("Sospechoso")
+                .descripcion("Vehículo sin placas rondando de forma reiterada.")
+                .nivelRiesgo("MEDIO")
+                .fechaEmision(LocalDateTime.now().minusHours(1))
+                .estado("PENDIENTE")
+                .zonaAfectada("Chorrillos")
+                .build());
+
+        return pendientes;
+    }
+
+    // HU21 - Escenario 2 y 3: Procesar la aprobación o rechazo definitivo
+    @Transactional
+    public com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO moderateIncident(
+            String email, com.upc.grupo3.dtos.privacy.ModerationRequestDTO request) {
+
+        usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        String estadoFormateado = request.getNuevoEstado().trim().toUpperCase();
+        log.info("Procesando moderación del incidente [{}] hacia el estado: {} por admin: {}",
+                request.getIdIncidente(), estadoFormateado, email);
+
+        String mensajeResultado;
+        if ("APROBADO".equals(estadoFormateado)) {
+            mensajeResultado = "Reporte aprobado con éxito. El incidente ahora es visible en el mapa activo de SafeRoute.";
+        } else {
+            mensajeResultado = "Reporte rechazado/marcado como falso. El incidente ha sido archivado y no afectará al mapa.";
+        }
+
+        return com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
+                .idAlerta(request.getIdIncidente())
+                .tipoIncidente("Reporte Moderado")
+                .descripcion("Incidente procesado por el módulo de control administrativo.")
+                .nivelRiesgo("ACTUALIZADO")
+                .fechaEmision(LocalDateTime.now())
+                .estado(estadoFormateado) // "APROBADO", "RECHAZADO" o "FALSO"
+                .zonaAfectada("Módulo de Administración")
+                .message(mensajeResultado)
+                .build();
+    }
+
+    // HU22 - Escenario 1: Consultar perfil de infractor y cantidad de reportes falsos
+    @Transactional(readOnly = true)
+    public com.upc.grupo3.dtos.auth.UserReportHistoryResponseDTO getUserReportHistory(Integer idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró al usuario con ID: " + idUsuario));
+
+        log.info("Administrador consultando historial de reportes falsos para el usuario ID: {}", idUsuario);
+
+        // Simulamos el conteo de sus reportes que fueron rechazados por moderación (HU21)
+        java.util.List<String> falsos = java.util.Arrays.asList(
+                "Reporte ID #402 - Falsa alarma de balacera en Av. Primavera",
+                "Reporte ID #409 - Accidente inexistente en Óvalo Higuereta"
+        );
+
+        return com.upc.grupo3.dtos.auth.UserReportHistoryResponseDTO.builder()
+                .idUsuario(usuario.getIdUsuario())
+                .nombreUsuario(usuario.getNombre())
+                .emailUsuario(usuario.getEmail())
+                .cantidadReportesFalsos(falsos.size()) // Reincidente (2 reportes falsos)
+                .estadoActual(Boolean.TRUE.equals(usuario.getEstado()) ? "ACTIVO" : "SUSPENDIDO")
+                .historialReportesFalsos(falsos)
+                .build();
+    }
+
+    // HU22 - Escenario 2 y 3: Suspensión definitiva y registro en el módulo de auditoría
+    @Transactional
+    public String suspendUserAccount(String adminEmail, com.upc.grupo3.dtos.auth.SuspendUserRequestDTO request) {
+        Usuario admin = usuarioRepository.findByEmailIgnoreCase(adminEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Administrador no encontrado"));
+
+        Usuario infractor = usuarioRepository.findById(request.getIdUsuario())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario a suspender no encontrado"));
+
+        log.info("[AUDITORÍA] Fecha: {}, Admin Responsable: {}, Usuario Suspendido ID: {}, Motivo: {}",
+                LocalDateTime.now(), admin.getEmail(), infractor.getIdUsuario(), request.getMotivo());
+
+        // Escenario 2: Cambiamos el estado a falso para desactivar la cuenta
+        infractor.setEstado(Boolean.FALSE);
+        usuarioRepository.save(infractor);
+
+        // Retornamos la confirmación que usará la interfaz
+        return "La cuenta del usuario " + infractor.getEmail() + " ha sido suspendida exitosamente. Motivo registrado en auditoría.";
+    }
+
+    // HU23 - Cálculo de reputación, hitos y exclusión estricta de reportes falsos
+    @Transactional(readOnly = true)
+    public com.upc.grupo3.dtos.auth.UserReputationResponseDTO getUserReputation(String email) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el correo: " + email));
+
+        log.info("HU23 - Calculando reputación y recompensas por hitos para: {}", email);
+
+        // Simulación del conteo histórico de la base de datos (Filtro por estados)
+        // Escenario 1: Reportes aprobados / verificados incrementan el contador
+        int aprobadosCount = 12;
+
+        // Escenario 3: Los reportes falsos/rechazados se guardan aparte y se excluyen del cálculo de logros
+        int falsosCount = 1;
+
+        // Escenario 2: Evaluación automática de hitos alcanzados según el avance
+        java.util.List<String> medallas = new java.util.ArrayList<>();
+        String rango = "Ciudadano Novato";
+
+        if (aprobadosCount >= 10) {
+            rango = "Héroe Urbano - Nivel Oro"; // Hito máximo alcanzado
+            medallas.add("Medalla al Civismo (Hito: 5 reportes válidos)");
+            medallas.add("Insignia Guardián de SafeRoute (Hito: 10 reportes válidos)");
+        } else if (aprobadosCount >= 5) {
+            rango = "Colaborador de Plata";
+            medallas.add("Medalla al Civismo (Hito: 5 reportes válidos)");
+        }
+
+        return com.upc.grupo3.dtos.auth.UserReputationResponseDTO.builder()
+                .idUsuario(usuario.getIdUsuario())
+                .nombre(usuario.getNombre())
+                .reportesVerificadosCount(aprobadosCount)
+                .reportesFalsosExcluidosCount(falsosCount) // Visibilidad de la exclusión
+                .rangoActual(rango)
+                .recompensasObtenidas(medallas)
+                .build();
+    }
+
+    // HU24 - Panel de métricas analíticas y mapa de calor para gestión urbana
+    @Transactional(readOnly = true)
+    public com.upc.grupo3.dtos.auth.DashboardMetricsResponseDTO getDashboardMetrics(String email) {
+        usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Administrador no encontrado"));
+
+        log.info("HU24 - Generando reporte consolidado de métricas y zonas de riesgo para: {}", email);
+
+        // Escenario 2: Simulación de agrupaciones de datos (Patrones de inseguridad)
+        java.util.Map<String, Long> porZona = new java.util.HashMap<>();
+        porZona.put("Santiago de Surco", 120L);
+        porZona.put("Chorrillos", 85L);
+        porZona.put("San Juan de Miraflores", 98L);
+
+        java.util.Map<String, Long> porTipo = new java.util.HashMap<>();
+        porTipo.put("Robo a mano armada", 145L);
+        porTipo.put("Asalto peatonal", 92L);
+        porTipo.put("Accidente vehicular", 66L);
+
+        java.util.Map<String, Long> porPeriodo = new java.util.HashMap<>();
+        porPeriodo.put("Q1 - 2026", 110L);
+        porPeriodo.put("Q2 - 2026", 193L);
+
+        // Escenario 3: Generación de coordenadas base de riesgo (Concentración térmica para el mapa)
+        java.util.List<com.upc.grupo3.dtos.auth.DashboardMetricsResponseDTO.HeatMapPointDTO> puntosCalor = new java.util.ArrayList<>();
+        puntosCalor.add(new com.upc.grupo3.dtos.auth.DashboardMetricsResponseDTO.HeatMapPointDTO(-12.1142, -77.0234, 0.9)); // Foco rojo de alta intensidad
+        puntosCalor.add(new com.upc.grupo3.dtos.auth.DashboardMetricsResponseDTO.HeatMapPointDTO(-12.1321, -77.0145, 0.5)); // Foco medio Amarillo
+        puntosCalor.add(new com.upc.grupo3.dtos.auth.DashboardMetricsResponseDTO.HeatMapPointDTO(-12.1504, -77.0291, 0.3)); // Foco bajo Verde
+
+        // Escenario 1: Consolidación de KPI's globales
+        long totalSumado = porTipo.values().stream().mapToLong(Long::longValue).sum();
+
+        return com.upc.grupo3.dtos.auth.DashboardMetricsResponseDTO.builder()
+                .totalIncidentes(totalSumado)
+                .zonasActivasCount(porZona.size())
+                .nivelRiesgoPredominante("ALTO")
+                .incidentesPorZona(porZona)
+                .incidentesPorTipo(porTipo)
+                .incidentesPorPeriodo(porPeriodo)
+                .puntosMapaCalor(puntosCalor)
+                .build();
+    }
+
+    // HU25 - Emisión y distribución de alertas globales de alta prioridad
+    @Transactional
+    public com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO broadcastGlobalAlert(
+            String adminEmail, com.upc.grupo3.dtos.privacy.GlobalAlertRequestDTO request) {
+
+        usuarioRepository.findByEmailIgnoreCase(adminEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Administrador no encontrado"));
+
+        log.info("HU25 - [BROADCAST] Alerta Global emitida por: {}. Título: '{}', Alcance: '{}'",
+                adminEmail, request.getTitulo(), request.getAlcance());
+
+        // Escenario 2: Forzamos que el módulo de notificaciones la marque con alta prioridad
+        String prioridadForzada = request.getNivelPrioridad().trim().toUpperCase();
+        if (!prioridadForzada.equals("CRÍTICA") && !prioridadForzada.equals("CRITICA")) {
+            prioridadForzada = "ALTA";
+        }
+
+        // Simulamos la distribución masiva exitosa a los canales de mensajería (Push/Web)
+        String confirmacionMensaje = "Alerta distribuida exitosamente a todos los usuarios en el alcance: "
+                + request.getAlcance() + ". Prioridad registrada: " + prioridadForzada;
+
+        // Reutilizamos nuestro DTO estrella de respuestas para mantener la consistencia
+        return com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
+                .idAlerta((int) (Math.random() * 90000) + 10000)
+                .tipoIncidente("ALERTA GLOBAL: " + request.getTitulo().trim())
+                .descripcion(request.getMensaje().trim())
+                .nivelRiesgo(prioridadForzada) // "ALTA" o "CRÍTICA"
+                .fechaEmision(LocalDateTime.now())
+                .estado("EMITIDA")
+                .zonaAfectada(request.getAlcance().trim())
+                .message(confirmacionMensaje) // Escenario 2 y 3
                 .build();
     }
 

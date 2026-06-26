@@ -3,6 +3,7 @@ package com.upc.grupo3.controllers;
 import com.upc.grupo3.dtos.privacy.AlertHistoryRequestDTO;
 import com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO;
 import com.upc.grupo3.dtos.privacy.CommunityVoteRequestDTO;
+import com.upc.grupo3.dtos.privacy.ModerationRequestDTO;
 import com.upc.grupo3.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +76,29 @@ public class AlertsHistoryController {
         log.info("HU20 - Petición POST recibida para verificación comunitaria del incidente {}", request.getIdIncidente());
 
         AlertHistoryResponseDTO response = authService.verifyCommunityIncident(email, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // HU21 - Escenario 1: Listar reportes pendientes de revisión
+    @GetMapping("/moderacion/pendientes")
+    public ResponseEntity<List<AlertHistoryResponseDTO>> getPendingReports(Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : null;
+        log.info("HU21 - Petición GET recibida para listar incidentes en espera de moderación.");
+
+        List<AlertHistoryResponseDTO> pending = authService.getPendingReportsForModeration(email);
+        return ResponseEntity.ok(pending);
+    }
+
+    // HU21 - Escenario 2 y 3: Cambiar estado a aprobado, rechazado o falso
+    @PutMapping("/moderacion/procesar")
+    public ResponseEntity<AlertHistoryResponseDTO> processModeration(
+            @Valid @RequestBody ModerationRequestDTO request,
+            Authentication authentication) {
+
+        String email = authentication != null ? authentication.getName() : null;
+        log.info("HU21 - Petición PUT recibida para ejecutar moderación en el incidente {}", request.getIdIncidente());
+
+        AlertHistoryResponseDTO response = authService.moderateIncident(email, request);
         return ResponseEntity.ok(response);
     }
 }
