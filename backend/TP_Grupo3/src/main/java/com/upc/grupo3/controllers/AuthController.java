@@ -14,11 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -54,5 +50,19 @@ public class AuthController {
         LogoutResponseDTO response = authService.logout(authorizationHeader, request, authenticatedEmail);
         log.info("Logout completado para email={}", authenticatedEmail);
         return ResponseEntity.ok(response);
+    }
+
+    // Parte 1 de HU04: Solicitar recuperación
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+        authService.saveResetPasswordToken(email);
+        return ResponseEntity.ok("Si el correo existe, se ha generado un enlace de recuperación.");
+    }
+
+    // Parte 2 de HU04: Cambiar la clave con el token
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
+        authService.updatePasswordWithToken(token, newPassword);
+        return ResponseEntity.ok("Contraseña restablecida correctamente.");
     }
 }

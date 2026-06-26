@@ -413,4 +413,107 @@ public class RiskZoneService {
                         .build())
                 .build();
     }
+
+    //HU14
+    @Transactional(readOnly = true)
+    public RiskZoneListResponseDTO getActiveAlertsForMap() {
+        // Usamos el repositorio con el metodo de ordenamiento avanzado
+        List<ZonaRiesgo> zonas = zonaRiesgoRepository.findByEstadoTrueOrderByNivelRiesgoDescFechaActualizacionDesc();
+
+        // Cargamos las ubicaciones necesarias
+        Map<Integer, Ubicacion> ubicaciones = loadUbicaciones(zonas);
+
+        // Convertimos a DTO usando el metodo buildRiskZoneDetail que ya tienes creado
+        List<RiskZoneDetailDTO> zonasDetalle = zonas.stream()
+                .map(zona -> buildRiskZoneDetail(zona, ubicaciones.get(zona.getUbicacion().getIdUbicacion())))
+                .collect(Collectors.toList());
+
+        return RiskZoneListResponseDTO.builder()
+                .message("Alertas activas obtenidas correctamente para el mapa")
+                .zonas(zonasDetalle)
+                .build();
+    }
+
+    //HU15
+    @Transactional(readOnly = true)
+    public RiskZoneDetailDTO getRiskZoneDetail(Integer idZona) {
+        //Buscamos la zona por ID (Escenario 3: Si no existe, lanza ResourceNotFoundException)
+        ZonaRiesgo zona = zonaRiesgoRepository.findById(idZona)
+                .orElseThrow(() -> new ResourceNotFoundException("La alerta no está disponible o no existe"));
+
+        // Validamos si la zona está activa (Escenario 3)
+        if (!Boolean.TRUE.equals(zona.getEstado())) {
+            throw new ResourceNotFoundException("La alerta ya no se encuentra activa");
+        }
+
+        //Obtenemos la ubicación asociada
+        Ubicacion ubicacion = zona.getUbicacion();
+        if (ubicacion == null) {
+            throw new ApplicationConfigurationException("Error de datos: Ubicación no encontrada para esta zona");
+        }
+
+        //Retornamos el detalle (esto ya incluye tipo, riesgo, fecha y geometría)
+        return buildRiskZoneDetail(zona, ubicacion);
+    }
+
+    //HU16
+    // Para Escenario 2: Evitar notificaciones duplicadas (Email_IDZona -> Hora de última alerta)
+    private final Map<String, LocalDateTime> notificacionesEnviadas = new HashMap<>();
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkNearbyRiskZones(String email, Double userLat, Double userLon) {
+        Map<String, Object> response = new HashMap<>();
+
+        // Escenario 3: Alerta bloqueada por falta de permiso de ubicación
+        if (userLat == null || userLon == null) {
+            log.info("Consulta de riesgo sin ubicación activa para el usuario: {}", email);
+            response.put("alertaGenerada", false);
+            response.put("mensaje", "Evaluación limitada a la zona configurada por falta de GPS.");
+            return response;
+        }
+
+        // 1. Obtenemos todas las zonas de riesgo activas
+        List<ZonaRiesgo> zonas = zonaRiesgoRepository.findByEstadoTrue();
+
+        for (ZonaRiesgo zona : zonas) {
+            Ubicacion ubi = zona.getUbicacion();
+            // Calculamos la distancia (en kilómetros)
+            double distancia = calcularDistancia(userLat, userLon,
+                    ubi.getLatitud().doubleValue(), ubi.getLongitud().doubleValue());
+
+            // Si está cerca (ejemplo: menos de 300 metros = 0.3 km)
+            if (distancia <= 0.3) {
+                String notificationKey = email + "_" + zona.getIdZona();
+
+                // Escenario 2: Prevención de duplicados (no repetir si se envió hace menos de 30 min)
+                if (notificacionesEnviadas.containsKey(notificationKey) &&
+                        notificacionesEnviadas.get(notificationKey).isAfter(LocalDateTime.now().minusMinutes(30))) {
+                    continue;
+                }
+
+                // Escenario 1: Generación de alerta
+                notificacionesEnviadas.put(notificationKey, LocalDateTime.now());
+
+                response.put("alertaGenerada", true);
+                response.put("mensaje", "¡Alerta de seguridad cercana! Zona de: " + zona.getTipo());
+                response.put("detalle", buildRiskZoneDetail(zona, ubi));
+                return response; // Retornamos la primera alerta relevante encontrada
+            }
+        }
+
+        response.put("alertaGenerada", false);
+        return response;
+    }
+
+    // Fórmula de Haversine para calcular distancia entre coordenadas
+    private double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadius = 6371; // km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadius * c;
+    }
 }
