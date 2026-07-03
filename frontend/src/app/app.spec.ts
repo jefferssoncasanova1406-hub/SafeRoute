@@ -24,6 +24,6 @@ describe('App', () => {
     const harness = await RouterTestingHarness.create('/');
     const compiled = harness.routeNativeElement as HTMLElement;
 
-    expect(compiled.querySelector('h1')?.textContent).toContain('Inicio');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Rutas más seguras');
   });
 });
