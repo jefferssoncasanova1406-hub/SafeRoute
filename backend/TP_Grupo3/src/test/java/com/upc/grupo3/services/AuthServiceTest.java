@@ -81,7 +81,7 @@ class AuthServiceTest {
                 .rol(rol)
                 .build();
 
-        when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findWithRolByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("12345678", "$2a$10$hash")).thenReturn(true);
         when(jwtService.generateToken(usuario, "usuario")).thenReturn("jwt-token");
 
@@ -108,7 +108,7 @@ class AuthServiceTest {
                 .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
 
-        when(usuarioRepository.findByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findWithRolByEmailIgnoreCase("luis.rojas@demo.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("incorrecta", "$2a$10$hash")).thenReturn(false);
 
         InvalidCredentialsException exception = assertThrows(
@@ -133,7 +133,7 @@ class AuthServiceTest {
                 .rol(Rol.builder().idRol(2).nombre("usuario").build())
                 .build();
 
-        when(usuarioRepository.findByEmailIgnoreCase("carla.vega@demo.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findWithRolByEmailIgnoreCase("carla.vega@demo.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("12345678", "$2a$10$hash")).thenReturn(true);
 
         AccountDisabledException exception = assertThrows(

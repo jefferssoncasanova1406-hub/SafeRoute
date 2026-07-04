@@ -66,10 +66,11 @@ public class Usuario extends EntidadAuditable {
     @Builder.Default
     private List<Ruta> rutas = new ArrayList<>();
 
-    public void setPassword(String encode) {
+    public void setPassword(String password) {
+        this.contrasena = password;
     }
 
     public String getPassword() {
-        return null;
+        return contrasena;
     }
 }

@@ -52,12 +52,14 @@ public class AuthService {
     private final JwtService jwtService;
     private final TokenRevocationService tokenRevocationService;
 
-    @Transactional(readOnly = true)
-
+    @Transactional
     //HU4
     public void saveResetPasswordToken(String email) {
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con ese correo"));
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (usuario == null) {
+            log.info("Solicitud de recuperación procesada para un correo no registrado");
+            return;
+        }
 
         // Generamos un código único aleatorio
         String token = java.util.UUID.randomUUID().toString();
@@ -849,7 +851,7 @@ public class AuthService {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
         log.debug("Iniciando login para email={}", normalizedEmail);
 
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(normalizedEmail)
+        Usuario usuario = usuarioRepository.findWithRolByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> {
                     log.warn("Login rechazado por credenciales invalidas email={}", normalizedEmail);
                     return new InvalidCredentialsException("Credenciales invalidas");
