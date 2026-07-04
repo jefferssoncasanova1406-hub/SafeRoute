@@ -13,6 +13,8 @@
     }
   </header>
 
+  <app-nearby-risk-alert />
+
   <div class="dashboard-cards">
     @for (action of actions; track action.route) {
       <a
@@ -32,7 +34,7 @@
     @if (isAdmin()) {
       <a class="dashboard-card dashboard-card--admin" routerLink="/admin/zonas">
         <div class="dashboard-card__body">
-          <span class="badge badge--accent" style="width:fit-content">Administración</span>
+          <span class="badge badge--accent" style="width: fit-content">Administración</span>
           <h2>Gestión de zonas</h2>
           <p>
             Crea, edita y controla el estado de las zonas de riesgo registradas en la plataforma.

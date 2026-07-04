@@ -2,14 +2,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import {
-  LoginRequest,
-  LoginResponse,
-} from '../../features/auth/models/login-response.model';
-import {
-  RegisterRequest,
-  RegisterResponse,
-} from '../../features/auth/models/register.model';
+import { LoginRequest, LoginResponse } from '../../features/auth/models/login-response.model';
+import { RegisterRequest, RegisterResponse } from '../../features/auth/models/register.model';
 import { appRuntimeConfig } from '../config/runtime-config';
 
 @Injectable({
@@ -30,6 +24,26 @@ export class AuthService {
 
   register(payload: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(this.registerUrl, payload);
+  }
+
+  requestPasswordReset(email: string): Observable<string> {
+    return this.http.post(`${appRuntimeConfig.apiBaseUrl}/auth/forgot-password`, null, {
+      params: { email },
+      responseType: 'text',
+    });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<string> {
+    return this.http.post(`${appRuntimeConfig.apiBaseUrl}/auth/reset-password`, null, {
+      params: { token, newPassword },
+      responseType: 'text',
+    });
+  }
+
+  updateSessionName(nombre: string): void {
+    const session = this.sessionState();
+    if (!session) return;
+    this.saveSession({ ...session, user: { ...session.user, nombre } });
   }
 
   saveSession(session: LoginResponse): void {

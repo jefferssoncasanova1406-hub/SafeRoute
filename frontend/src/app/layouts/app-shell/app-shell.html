@@ -18,6 +18,14 @@
         <span class="sidebar__item-label">Rutas</span>
         <small>Planifica tus trayectos</small>
       </a>
+      <a class="sidebar__item" routerLink="/app/alertas" routerLinkActive="is-active">
+        <span class="sidebar__item-label">Alertas</span>
+        <small>Riesgos activos cerca de ti</small>
+      </a>
+      <a class="sidebar__item" routerLink="/app/perfil" routerLinkActive="is-active">
+        <span class="sidebar__item-label">Perfil</span>
+        <small>Cuenta y movilidad</small>
+      </a>
       <a class="sidebar__item" routerLink="/app/privacidad" routerLinkActive="is-active">
         <span class="sidebar__item-label">Privacidad</span>
         <small>Configuración de datos</small>
@@ -27,7 +35,11 @@
         <small>Estado actual de la ciudad</small>
       </a>
       @if (isAdmin()) {
-        <a class="sidebar__item sidebar__item--admin" routerLink="/admin/zonas" routerLinkActive="is-active">
+        <a
+          class="sidebar__item sidebar__item--admin"
+          routerLink="/admin/zonas"
+          routerLinkActive="is-active"
+        >
           <span class="sidebar__item-label">Administración</span>
           <small>Gestión de zonas</small>
         </a>
@@ -46,9 +58,7 @@
           </div>
         </div>
       }
-      <button class="sidebar__logout" type="button" (click)="logout()">
-        Cerrar sesión
-      </button>
+      <button class="sidebar__logout" type="button" (click)="logout()">Cerrar sesión</button>
     </div>
   </aside>
 

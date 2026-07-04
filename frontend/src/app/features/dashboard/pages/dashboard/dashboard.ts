@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { NearbyRiskAlert } from '../../../alerts/components/nearby-risk-alert/nearby-risk-alert';
 
 interface DashboardAction {
   title: string;
@@ -12,7 +13,7 @@ interface DashboardAction {
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [RouterLink],
+  imports: [RouterLink, NearbyRiskAlert],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

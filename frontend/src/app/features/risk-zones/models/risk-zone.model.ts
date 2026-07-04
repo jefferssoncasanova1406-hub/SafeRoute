@@ -39,6 +39,12 @@ export interface RiskZoneOperationResponse {
   zona: RiskZoneDetail;
 }
 
+export interface RiskProximityResponse {
+  alertaGenerada: boolean;
+  mensaje?: string;
+  detalle?: RiskZoneDetail;
+}
+
 export interface RiskZoneMapLocation {
   ciudad: string;
   distrito: string;

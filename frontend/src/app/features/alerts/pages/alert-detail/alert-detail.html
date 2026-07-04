@@ -1,0 +1,61 @@
+<section class="page alert-detail-page">
+  <header class="app-page-header">
+    <div>
+      <h1>Detalle de alerta</h1>
+      <p>Información vigente de la zona seleccionada.</p>
+    </div>
+    <a class="button button--secondary" routerLink="/app/alertas">← Volver a alertas</a>
+  </header>
+
+  @if (isLoading()) {
+    <div class="empty-state" aria-live="polite">
+      <h2>Cargando detalle</h2>
+      <p>Consultando la alerta seleccionada.</p>
+    </div>
+  } @else if (requestError(); as errorMessage) {
+    <div class="notice notice--error" role="alert">
+      <strong>Alerta no disponible</strong>
+      <p>{{ errorMessage }}</p>
+    </div>
+  } @else if (alert(); as item) {
+    <article class="panel alert-detail-card">
+      <div class="alert-detail-card__hero">
+        <div>
+          <span class="subtle-label">Zona {{ item.idZona }}</span>
+          <h2>{{ item.tipo }}</h2>
+          <p>{{ item.ubicacion.distrito }}, {{ item.ubicacion.ciudad }}</p>
+        </div>
+        <span [class]="'badge badge--' + riskTone(item.nivelRiesgo)"
+          >Riesgo {{ riskLabel(item.nivelRiesgo) }}</span
+        >
+      </div>
+      <div class="panel__body alert-detail-card__body">
+        <section>
+          <span class="subtle-label">Descripción</span>
+          <p>{{ item.descripcion }}</p>
+        </section>
+        <div class="metric-grid">
+          <article class="metric-tile">
+            <span class="metric-tile__label">Estado</span
+            ><strong class="metric-tile__value metric-tile__value--text">{{ item.estado }}</strong>
+          </article>
+          <article class="metric-tile">
+            <span class="metric-tile__label">Actualización</span
+            ><strong class="metric-tile__value metric-tile__value--text">{{
+              formatDate(item.fechaActualizacion)
+            }}</strong>
+          </article>
+          <article class="metric-tile">
+            <span class="metric-tile__label">Coordenadas</span
+            ><strong class="metric-tile__value metric-tile__value--text"
+              >{{ item.ubicacion.latitud }}, {{ item.ubicacion.longitud }}</strong
+            >
+          </article>
+        </div>
+        <div class="button-row">
+          <a class="button" routerLink="/app/zonas">Ubicar en el mapa</a>
+        </div>
+      </div>
+    </article>
+  }
+</section>
