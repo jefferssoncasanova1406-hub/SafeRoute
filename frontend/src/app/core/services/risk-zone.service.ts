@@ -4,11 +4,14 @@ import { Observable } from 'rxjs';
 
 import { AuthService } from './auth.service';
 import {
+  RiskProximityResponse,
+  RiskZoneDetail,
   RiskZoneListResponse,
   RiskZoneMapResponse,
   RiskZoneOperationResponse,
   RiskZoneRequest,
 } from '../../features/risk-zones/models/risk-zone.model';
+import { appRuntimeConfig } from '../config/runtime-config';
 
 interface RiskZoneFilters {
   estado?: string;
@@ -26,8 +29,8 @@ interface RiskZoneMapFilters {
 export class RiskZoneService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
-  private readonly managementUrl = 'http://localhost:8080/api/risk-zones';
-  private readonly mapUrl = 'http://localhost:8080/api/mapa/zonas-riesgo/activas';
+  private readonly managementUrl = `${appRuntimeConfig.apiBaseUrl}/api/risk-zones`;
+  private readonly mapUrl = `${appRuntimeConfig.apiBaseUrl}/api/mapa/zonas-riesgo/activas`;
 
   getRiskZones(filters?: RiskZoneFilters): Observable<RiskZoneListResponse> {
     let params = new HttpParams();
@@ -63,6 +66,31 @@ export class RiskZoneService {
     });
   }
 
+  getActiveAlerts(): Observable<RiskZoneListResponse> {
+    return this.http.get<RiskZoneListResponse>(`${this.managementUrl}/active-alerts`, {
+      headers: this.authService.buildAuthorizedHeaders(),
+    });
+  }
+
+  getRiskZoneDetail(riskZoneId: number): Observable<RiskZoneDetail> {
+    return this.http.get<RiskZoneDetail>(`${this.managementUrl}/${riskZoneId}`, {
+      headers: this.authService.buildAuthorizedHeaders(),
+    });
+  }
+
+  checkProximity(latitude?: number, longitude?: number): Observable<RiskProximityResponse> {
+    let params = new HttpParams();
+
+    if (typeof latitude === 'number' && typeof longitude === 'number') {
+      params = params.set('lat', latitude.toString()).set('lon', longitude.toString());
+    }
+
+    return this.http.get<RiskProximityResponse>(`${this.managementUrl}/check-proximity`, {
+      headers: this.authService.buildAuthorizedHeaders(),
+      params,
+    });
+  }
+
   createRiskZone(payload: RiskZoneRequest): Observable<RiskZoneOperationResponse> {
     return this.http.post<RiskZoneOperationResponse>(this.managementUrl, payload, {
       headers: this.authService.buildAuthorizedHeaders(),
@@ -73,9 +101,13 @@ export class RiskZoneService {
     riskZoneId: number,
     payload: RiskZoneRequest,
   ): Observable<RiskZoneOperationResponse> {
-    return this.http.put<RiskZoneOperationResponse>(`${this.managementUrl}/${riskZoneId}`, payload, {
-      headers: this.authService.buildAuthorizedHeaders(),
-    });
+    return this.http.put<RiskZoneOperationResponse>(
+      `${this.managementUrl}/${riskZoneId}`,
+      payload,
+      {
+        headers: this.authService.buildAuthorizedHeaders(),
+      },
+    );
   }
 
   deactivateRiskZone(riskZoneId: number): Observable<RiskZoneOperationResponse> {

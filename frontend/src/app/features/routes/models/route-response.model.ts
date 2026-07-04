@@ -1,49 +1,40 @@
-export interface RoutePointResponse {
-  latitud: number;
-  longitud: number;
+import { TransportMode } from './route-request.model';
+
+export interface ResolvedPlace {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface RouteGeometry {
-  type: string;
+  type: 'LineString' | string;
   coordinates: number[][];
 }
 
-export interface RouteRiskZoneCenter {
-  latitud: number;
-  longitud: number;
-  distrito: string;
-  ciudad: string;
-}
-
-export interface RouteRiskZone {
-  idZona: number;
-  tipo: string;
-  nivelRiesgo: number;
-  nivelRiesgoNombre: string;
-  color: string;
-  descripcion: string;
-  centro: RouteRiskZoneCenter;
+export interface RouteStep {
+  order: number;
+  instruction: string | null;
+  streetName: string | null;
+  distanceMeters: number | null;
+  durationSeconds: number | null;
+  maneuverType: string | null;
+  modifier: string | null;
 }
 
 export interface RouteOption {
-  distancia: number;
-  tiempoEstimado: number;
-  scoreRiesgo: number;
-  nivelRiesgo: string;
-  cruzaZonasRiesgo: boolean;
-  geometria: RouteGeometry;
-  zonasRiesgo: RouteRiskZone[];
+  routeId: string;
+  summary: string;
+  durationMinutes: number;
+  distanceKm: number;
+  geometry: RouteGeometry;
+  steps: RouteStep[];
 }
 
 export interface RouteResponse {
-  origen: RoutePointResponse;
-  destino: RoutePointResponse;
-  rutaMasRapida: RouteOption;
-  rutaMasSegura: RouteOption;
-  rutaRecomendada: RouteOption;
-  nivelRiesgo: string;
-  scoreRiesgo: number;
-  tiempoEstimado: number;
-  distancia: number;
-  recomendacion: string;
+  originResolved: ResolvedPlace;
+  destinationResolved: ResolvedPlace;
+  transportMode: TransportMode;
+  departureTime: string | null;
+  routes: RouteOption[];
 }

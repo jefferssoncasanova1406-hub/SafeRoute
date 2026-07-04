@@ -1,0 +1,40 @@
+<section class="proximity-card" aria-labelledby="proximity-title">
+  <div class="proximity-card__icon" aria-hidden="true">⌖</div>
+  <div class="proximity-card__content">
+    <h2 id="proximity-title">Comprueba tu entorno</h2>
+    <p>
+      Usa tu ubicación únicamente al solicitarlo para saber si estás cerca de una zona de riesgo
+      activa.
+    </p>
+
+    @if (result(); as response) {
+      <div
+        [class]="
+          response.alertaGenerada
+            ? 'proximity-result proximity-result--warning'
+            : 'proximity-result proximity-result--safe'
+        "
+        role="status"
+      >
+        <strong>{{
+          response.alertaGenerada ? 'Riesgo cercano detectado' : 'Comprobación terminada'
+        }}</strong>
+        <p>{{ response.mensaje || 'No se detectaron zonas de riesgo a menos de 300 metros.' }}</p>
+        @if (response.detalle; as detail) {
+          <a [routerLink]="['/app/alertas', detail.idZona]">Ver detalle de {{ detail.tipo }} →</a>
+        }
+      </div>
+      <button class="button button--ghost" type="button" (click)="dismiss()">
+        Cerrar resultado
+      </button>
+    } @else {
+      <button class="button" type="button" (click)="checkLocation()" [disabled]="isChecking()">
+        {{ isChecking() ? 'Comprobando...' : 'Usar mi ubicación' }}
+      </button>
+    }
+
+    @if (requestError(); as errorMessage) {
+      <p class="field-error" role="alert">{{ errorMessage }}</p>
+    }
+  </div>
+</section>

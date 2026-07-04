@@ -1,0 +1,205 @@
+BITACORA DE CODIGO - FRONTEND SAFEROUTE
+Fecha base: 2026-06-20
+Ultima actualizacion: 2026-06-20/21
+
+1. FUENTE DE LA INFORMACION
+- Conversacion actual de trabajo.
+- Estado del repositorio local.
+- Commits recientes:
+  - 7f1c1de Renueva la pantalla de rutas con mapa e instrucciones
+  - a67782d Ajusta el frontend al nuevo endpoint de rutas
+  - b4ee7b1 Add route evaluation endpoint with stricter Mapbox geocoding
+  - 165a0c5 backend: habilitar CORS para clientes web locales
+- Build local del frontend con Angular.
+
+Nota:
+No se encontraron exportaciones de "todos los chats" como archivos locales. Esta bitacora se basa en el chat actual y en los archivos disponibles dentro del workspace.
+
+2. PROBLEMA PRINCIPAL ENCONTRADO
+El frontend de rutas seguia conectado a un flujo viejo:
+- pedia coordenadas manuales
+- consumia un endpoint anterior
+- esperaba un contrato de respuesta distinto
+- no dibujaba rutas reales del backend nuevo
+- no mostraba instrucciones giro a giro del endpoint de evaluacion
+
+3. CAMBIOS IMPORTANTES HECHOS
+
+3.1. Ajuste del contrato de rutas
+Archivos:
+- frontend/src/app/core/services/route.service.ts
+- frontend/src/app/features/routes/models/route-request.model.ts
+- frontend/src/app/features/routes/models/route-response.model.ts
+
+Que se hizo:
+- Se cambio el endpoint del frontend a POST /api/routes/evaluate
+- Se reemplazo el request viejo por:
+  - origin
+  - destination
+  - transportMode
+- Se reemplazo el response viejo por el contrato real del backend:
+  - originResolved
+  - destinationResolved
+  - transportMode
+  - departureTime
+  - routes[]
+  - geometry
+  - steps
+
+Como se soluciono:
+- Se alinearon los modelos TypeScript con los DTO reales del backend.
+- Se renombro el metodo del servicio a evaluateRoute() para reflejar el caso de uso correcto.
+
+3.2. Reescritura de la pantalla de rutas
+Archivos:
+- frontend/src/app/features/routes/pages/route-calculate/route-calculate.ts
+- frontend/src/app/features/routes/pages/route-calculate/route-calculate.html
+- frontend/src/app/features/routes/pages/route-calculate/route-calculate.scss
+
+Que se hizo:
+- Se simplifico el formulario para que el usuario solo escriba:
+  - origen
+  - destino
+  - modo de transporte
+- Se agrego selector visual para:
+  - driving
+  - walking
+  - cycling
+- Se agrego manejo de estados:
+  - cargando
+  - error
+  - sin resultados
+  - rutas cargadas
+- Se agrego seleccion de alternativa de ruta.
+- Se agrego panel de instrucciones paso a paso.
+- Se agrego resumen de:
+  - duracion
+  - distancia
+  - cantidad de pasos
+
+Como se soluciono:
+- Se rehizo el componente completo alrededor del contrato real del backend.
+- Se agregaron funciones de formateo para duracion, distancia e instrucciones.
+- Se mejoro el parseo de errores para mostrar mensajes del backend cuando existen.
+
+3.3. Integracion real del mapa
+Archivos:
+- frontend/package.json
+- frontend/package-lock.json
+- frontend/angular.json
+- frontend/src/app/features/routes/pages/route-calculate/route-calculate.ts
+
+Que se hizo:
+- Se agrego mapbox-gl al frontend.
+- Se renderiza la geometria GeoJSON de la ruta seleccionada.
+- Se agregan marcadores de origen y destino.
+- El mapa hace fitBounds segun la geometria recibida.
+- Se incorporaron los estilos CSS requeridos por Mapbox GL JS.
+
+Como se soluciono:
+- Se creo una fuente GeoJSON en el mapa.
+- Se agrego una capa line para dibujar la ruta.
+- Se sincronizo el render del mapa con el estado reactivo del componente.
+
+3.4. Reduccion del peso del bundle inicial
+Archivo:
+- frontend/src/app/app.routes.ts
+
+Problema:
+- La inclusion de mapbox-gl empujaba demasiado el bundle inicial.
+
+Solucion:
+- La ruta /app/rutas se movio a carga diferida con loadComponent().
+
+Resultado:
+- El bundle inicial bajo y el build volvio a pasar sin exceder el presupuesto principal.
+
+3.5. Centralizacion de configuracion de runtime
+Archivos:
+- frontend/src/app/core/config/runtime-config.ts
+- frontend/src/app/core/services/auth.service.ts
+- frontend/src/app/core/services/risk-zone.service.ts
+- frontend/src/app/core/services/route.service.ts
+- frontend/src/app/features/routes/pages/route-calculate/route-calculate.ts
+
+Problema:
+- El frontend tenia URLs de backend hardcodeadas en varios servicios.
+- El token publico del mapa estaba embebido dentro del componente.
+
+Solucion:
+- Se creo un punto unico de configuracion:
+  - apiBaseUrl
+  - mapboxPublicToken
+- Se dejo soporte para override en runtime con window.__SAFEROUTE_CONFIG__
+- Los servicios y el mapa ahora consumen esa config central.
+
+4. VERIFICACION REALIZADA
+- npm run build -> OK
+- El frontend llego a correr localmente en http://127.0.0.1:4200 durante la validacion.
+- Despues se detuvo el proceso para dejar el puerto libre.
+
+5. COMMITS CLAVE
+- a67782d Ajusta el frontend al nuevo endpoint de rutas
+- 7f1c1de Renueva la pantalla de rutas con mapa e instrucciones
+
+6. BUGS O RIESGOS QUE SIGUEN ABIERTOS
+
+6.1. Warning de presupuesto en landing.scss
+Archivo:
+- frontend/src/app/features/landing/pages/landing/landing.scss
+
+Estado:
+- Sigue apareciendo un warning en el build porque supera por poco el presupuesto configurado.
+
+Impacto:
+- No rompe la app.
+- Si se endurecen los budgets, puede bloquear builds futuros.
+
+Recomendacion:
+- Reducir SCSS del landing o ajustar el budget si el tamano esta justificado.
+
+6.2. Configuracion de runtime aun depende de fallback local
+Archivo:
+- frontend/src/app/core/config/runtime-config.ts
+
+Estado:
+- Ya no esta disperso, pero el fallback sigue apuntando a localhost y a un token publico por defecto.
+
+Impacto:
+- En otros entornos puede conectarse al backend equivocado si no se inyecta config externa.
+
+Recomendacion:
+- Inyectar window.__SAFEROUTE_CONFIG__ desde el entorno de despliegue.
+
+6.3. No hay pruebas unitarias especificas para la pantalla de rutas
+Archivos afectados:
+- frontend/src/app/features/routes/pages/route-calculate/*
+- frontend/src/app/core/services/route.service.ts
+
+Impacto:
+- Un cambio en el contrato del backend o en el manejo de errores puede romper la pantalla sin deteccion temprana.
+
+Recomendacion:
+- Agregar pruebas para:
+  - parseo de errores
+  - seleccion de rutas
+  - formateo de duracion y distancia
+  - render de estados vacio/cargando/error
+
+6.4. Dependencia de tiles raster de OpenStreetMap para la base del mapa
+Archivo:
+- frontend/src/app/features/routes/pages/route-calculate/route-calculate.ts
+
+Impacto:
+- Funciona para desarrollo.
+- En produccion puede requerir revisar limites de uso, disponibilidad y politica del proveedor de tiles.
+
+Recomendacion:
+- Definir una estrategia de basemap formal para produccion.
+
+7. SIGUIENTE PASO TECNICO RECOMENDADO
+Orden sugerido:
+1. Agregar pruebas unitarias del feature de rutas.
+2. Inyectar config runtime real por ambiente.
+3. Resolver el warning de budget del landing.
+4. Definir estrategia de mapa base para produccion.

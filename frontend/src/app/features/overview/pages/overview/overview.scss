@@ -19,7 +19,7 @@
   padding: 1rem 1.1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface);
 }
 
 .flow-card__order {
@@ -28,7 +28,7 @@
   justify-content: center;
   width: 3rem;
   height: 3rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--brand-soft);
   color: var(--brand-strong);
   font-weight: 800;

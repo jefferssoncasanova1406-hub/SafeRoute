@@ -1,9 +1,8 @@
-export interface RoutePointRequest {
-  latitud: number;
-  longitud: number;
-}
+export type TransportMode = 'driving' | 'walking' | 'cycling';
 
 export interface RouteRequest {
-  origen: RoutePointRequest;
-  destino: RoutePointRequest;
+  origin: string;
+  destination: string;
+  transportMode: TransportMode;
+  departureTime?: string;
 }

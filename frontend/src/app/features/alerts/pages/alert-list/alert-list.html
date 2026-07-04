@@ -1,0 +1,68 @@
+<section class="page alerts-page">
+  <header class="app-page-header">
+    <div>
+      <h1>Alertas activas</h1>
+      <p>Revisa incidentes y zonas de riesgo vigentes antes de iniciar tu trayecto.</p>
+    </div>
+    <div class="app-page-header__actions">
+      <button
+        class="button button--secondary"
+        type="button"
+        (click)="loadAlerts()"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+      <a class="button" routerLink="/app/zonas">Ver en el mapa</a>
+    </div>
+  </header>
+
+  @if (requestError(); as errorMessage) {
+    <div class="notice notice--error" role="alert">
+      <strong>No se pudieron cargar las alertas.</strong>
+      <p>{{ errorMessage }}</p>
+    </div>
+  }
+
+  @if (isLoading() && alerts().length === 0) {
+    <div class="empty-state" aria-live="polite">
+      <h2>Consultando alertas</h2>
+      <p>Estamos obteniendo la información más reciente.</p>
+    </div>
+  } @else {
+    <div class="alert-list" aria-live="polite">
+      @for (alert of alerts(); track alert.idZona) {
+        <a class="alert-card" [routerLink]="['/app/alertas', alert.idZona]">
+          <span
+            class="alert-card__signal"
+            [class]="'alert-card__signal alert-card__signal--' + riskTone(alert.nivelRiesgo)"
+            aria-hidden="true"
+          ></span>
+          <div class="alert-card__content">
+            <div class="alert-card__top">
+              <div>
+                <span class="subtle-label"
+                  >{{ alert.ubicacion.distrito }}, {{ alert.ubicacion.ciudad }}</span
+                >
+                <h2>{{ alert.tipo }}</h2>
+              </div>
+              <span [class]="'badge badge--' + riskTone(alert.nivelRiesgo)"
+                >Riesgo {{ riskLabel(alert.nivelRiesgo) }}</span
+              >
+            </div>
+            <p>{{ alert.descripcion }}</p>
+            <div class="alert-card__meta">
+              <span>{{ formatDate(alert.fechaActualizacion) }}</span>
+              <strong>Ver detalle →</strong>
+            </div>
+          </div>
+        </a>
+      } @empty {
+        <div class="empty-state">
+          <h2>No hay alertas activas</h2>
+          <p>No se registran zonas de riesgo vigentes con los datos actuales.</p>
+        </div>
+      }
+    </div>
+  }
+</section>

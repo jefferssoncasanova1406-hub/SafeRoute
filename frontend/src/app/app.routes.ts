@@ -9,8 +9,6 @@ import { LandingPage } from './features/landing/pages/landing/landing';
 import { LoginPage } from './features/auth/pages/login/login';
 import { AccountRegisterPage } from './features/auth/pages/account-register/account-register';
 import { DashboardPage } from './features/dashboard/pages/dashboard/dashboard';
-import { RouteCalculatePage } from './features/routes/pages/route-calculate/route-calculate';
-import { RiskZoneReportPage } from './features/risk-zones/map/pages/risk-zone-report/risk-zone-report';
 import { RiskZoneManagementPage } from './features/risk-zones/management/pages/risk-zone-management/risk-zone-management';
 
 export const routes: Routes = [
@@ -22,6 +20,20 @@ export const routes: Routes = [
       { path: 'inicio', component: LandingPage },
       { path: 'iniciar-sesion', component: LoginPage },
       { path: 'crear-cuenta', component: AccountRegisterPage },
+      {
+        path: 'recuperar-contrasena',
+        loadComponent: () =>
+          import('./features/auth/pages/forgot-password/forgot-password').then(
+            (module) => module.ForgotPasswordPage,
+          ),
+      },
+      {
+        path: 'restablecer-contrasena',
+        loadComponent: () =>
+          import('./features/auth/pages/reset-password/reset-password').then(
+            (module) => module.ResetPasswordPage,
+          ),
+      },
     ],
   },
   {
@@ -31,8 +43,48 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'panel', pathMatch: 'full' },
       { path: 'panel', component: DashboardPage },
-      { path: 'rutas', component: RouteCalculatePage },
-      { path: 'zonas', component: RiskZoneReportPage },
+      {
+        path: 'alertas',
+        loadComponent: () =>
+          import('./features/alerts/pages/alert-list/alert-list').then(
+            (module) => module.AlertListPage,
+          ),
+      },
+      {
+        path: 'alertas/:id',
+        loadComponent: () =>
+          import('./features/alerts/pages/alert-detail/alert-detail').then(
+            (module) => module.AlertDetailPage,
+          ),
+      },
+      {
+        path: 'rutas',
+        loadComponent: () =>
+          import('./features/routes/pages/route-calculate/route-calculate').then(
+            (module) => module.RouteCalculatePage,
+          ),
+      },
+      {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./features/profile/pages/profile-settings/profile-settings').then(
+            (module) => module.ProfileSettingsPage,
+          ),
+      },
+      {
+        path: 'privacidad',
+        loadComponent: () =>
+          import('./features/privacy/pages/privacy-settings/privacy-settings').then(
+            (module) => module.PrivacySettingsPage,
+          ),
+      },
+      {
+        path: 'zonas',
+        loadComponent: () =>
+          import('./features/risk-zones/map/pages/risk-zone-report/risk-zone-report').then(
+            (module) => module.RiskZoneReportPage,
+          ),
+      },
     ],
   },
   {

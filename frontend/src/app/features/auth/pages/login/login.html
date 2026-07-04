@@ -1,9 +1,7 @@
 <div class="auth-split">
   <div class="auth-split__form">
     <div class="auth-form-box">
-      <a class="auth-back" routerLink="/inicio" aria-label="Volver al inicio">
-        ← Inicio
-      </a>
+      <a class="auth-back" routerLink="/inicio" aria-label="Volver al inicio"> ← Inicio </a>
 
       <header class="auth-form-header">
         <h1>Bienvenido de nuevo</h1>
@@ -41,6 +39,10 @@
           }
         </div>
 
+        <a class="auth-footer-link forgot-password-link" routerLink="/recuperar-contrasena">
+          ¿Olvidaste tu contraseña?
+        </a>
+
         @if (loginError(); as err) {
           <div class="notice notice--error" role="alert">
             <strong>No pudimos iniciar sesión.</strong>
@@ -66,7 +68,7 @@
       <div class="auth-visual-ring auth-visual-ring--small"></div>
 
       <div class="auth-visual-card auth-visual-card--main">
-        <span class="subtle-label" style="color:rgba(255,255,255,0.5)">Rutas calculadas</span>
+        <span class="subtle-label" style="color: rgba(255, 255, 255, 0.5)">Rutas calculadas</span>
         <strong>3 alternativas</strong>
         <p>Rápida, segura y recomendada para cada trayecto.</p>
       </div>
