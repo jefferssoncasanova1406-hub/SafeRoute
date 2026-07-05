@@ -1,0 +1,41 @@
+.moderation-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.moderation-card {
+  gap: var(--space-3);
+}
+
+.moderation-card__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.moderation-card__meta div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.moderation-card__meta dt {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.moderation-card__meta dd {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 820px) {
+  .moderation-card__meta {
+    grid-template-columns: 1fr;
+  }
+}
