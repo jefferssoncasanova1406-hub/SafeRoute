@@ -1,10 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { RouteService } from '../../../../core/services/route.service';
+import { PrivacyService } from '../../../privacy/services/privacy.service';
+import { PrivacyPreferencesResponse } from '../../../privacy/models/privacy.model';
+import { TrackingService } from '../../../tracking/services/tracking.service';
+import { ShareTrackingResponse } from '../../../tracking/models/tracking.model';
 import { RouteResponse, SafeRouteResponse } from '../../models/route-response.model';
 import { RouteCalculatePage } from './route-calculate';
 
@@ -63,18 +67,51 @@ class RouteServiceStub {
   evaluateSafeRoute = vi.fn(() => this.safeResponse);
 }
 
+class PrivacyServiceStub {
+  response: Observable<PrivacyPreferencesResponse> = of({
+    userId: 1,
+    realTimeLocationEnabled: true,
+    personalDataSharingEnabled: true,
+    message: 'OK',
+  });
+
+  getPreferences = vi.fn(() => this.response);
+}
+
+class TrackingServiceStub {
+  shareSubject = new Subject<ShareTrackingResponse>();
+  stopSubject = new Subject<string>();
+  share = vi.fn(() => this.shareSubject.asObservable());
+  stop = vi.fn(() => this.stopSubject.asObservable());
+}
 
 describe('RouteCalculatePage', () => {
   let fixture: ComponentFixture<RouteCalculatePage>;
   let routeService: RouteServiceStub;
+  let privacyService: PrivacyServiceStub;
+  let trackingService: TrackingServiceStub;
 
   beforeEach(async () => {
     routeService = new RouteServiceStub();
+    privacyService = new PrivacyServiceStub();
+    trackingService = new TrackingServiceStub();
+
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn(() => Promise.resolve()) },
+    });
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: vi.fn(() => Promise.resolve()),
+    });
+
     await TestBed.configureTestingModule({
       imports: [RouteCalculatePage],
       providers: [
         provideRouter([]),
         { provide: RouteService, useValue: routeService },
+        { provide: PrivacyService, useValue: privacyService },
+        { provide: TrackingService, useValue: trackingService },
       ],
     }).compileComponents();
 
@@ -141,6 +178,51 @@ describe('RouteCalculatePage', () => {
     expect(text).toContain('No fue posible cargar la evaluaciÃ³n de seguridad');
   });
 
+  it('muestra compartir solo con ruta calculada y previene doble solicitud', () => {
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Compartir ubicaciÃ³n');
+
+    submitForm(fixture.nativeElement as HTMLElement);
+    fixture.detectChanges();
+
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicaciÃ³n');
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicaciÃ³n');
+
+    expect(privacyService.getPreferences).toHaveBeenCalledOnce();
+  });
+
+  it('genera, copia, comparte y detiene el enlace', async () => {
+    submitForm(fixture.nativeElement as HTMLElement);
+    fixture.detectChanges();
+
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicaciÃ³n');
+    trackingService.shareSubject.next({
+      tokenSeguimiento: 'abc12345',
+      urlCompleta: 'https://saferoute.pe/shared/tracking/abc12345',
+      fechaExpiracionEstimada: '2026-07-05T12:00:00',
+      estadoLink: 'ACTIVO',
+    });
+    trackingService.shareSubject.complete();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('/seguimiento/abc12345');
+
+    clickButton(fixture.nativeElement as HTMLElement, 'Copiar enlace');
+    await Promise.resolve();
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/seguimiento/abc12345`,
+    );
+
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir');
+    await Promise.resolve();
+    expect(navigator.share).toHaveBeenCalled();
+
+    clickButton(fixture.nativeElement as HTMLElement, 'Detener seguimiento');
+    trackingService.stopSubject.next('Revocado');
+    trackingService.stopSubject.complete();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Estado REVOCADO');
+  });
 });
 
 function submitForm(root: HTMLElement): void {
@@ -149,6 +231,13 @@ function submitForm(root: HTMLElement): void {
   form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 }
 
+function clickButton(root: HTMLElement, label: string): void {
+  const button = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find((item) =>
+    (item.textContent ?? '').includes(label),
+  );
+  if (!button) throw new Error(`No se encontro el boton ${label}`);
+  button.click();
+}
 
 const ROUTE_RESPONSE: RouteResponse = {
   originResolved: {

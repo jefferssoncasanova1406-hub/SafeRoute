@@ -10,6 +10,7 @@
 .route-summary-card,
 .route-options-stack,
 .route-comparison-panel,
+.tracking-panel,
 .route-steps-list {
   display: grid;
   gap: 1rem;
@@ -161,7 +162,8 @@
   line-height: 1.1;
 }
 
-.route-comparison-panel {
+.route-comparison-panel,
+.tracking-panel {
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -204,7 +206,8 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.safe-comparison-card {
+.safe-comparison-card,
+.tracking-card {
   display: grid;
   gap: 0.85rem;
   padding: 1rem;
@@ -213,6 +216,12 @@
   background: var(--brand-soft);
 }
 
+.tracking-link {
+  overflow-wrap: anywhere;
+  color: var(--ink-strong);
+  font-weight: 700;
+  line-height: 1.5;
+}
 
 .route-steps-panel {
   overflow: hidden;
