@@ -138,6 +138,60 @@
             </div>
           </section>
 
+          <section class="route-comparison-panel" aria-labelledby="route-comparison-title">
+            <div class="route-options-stack__header">
+              <span class="subtle-label">ComparaciÃ³n de alternativas</span>
+              <h3 id="route-comparison-title">Distancia, tiempo y seguridad</h3>
+              <p>
+                La ruta recomendada usa la alternativa inicial que ya selecciona el flujo actual.
+                La seguridad solo se muestra cuando el backend devuelve esos datos.
+              </p>
+            </div>
+
+            @if (securityWarning(); as warning) {
+              <div class="notice notice--warning" role="status">
+                <strong>Seguridad no disponible para la comparaciÃ³n.</strong>
+                <p>{{ warning }}</p>
+              </div>
+            }
+
+            @if (isSecurityLoading()) {
+              <div class="notice" role="status">
+                <strong>Consultando seguridad.</strong>
+                <p>Las rutas calculadas permanecen disponibles.</p>
+              </div>
+            }
+
+            @if (safeComparisonCards().length > 0) {
+              <div class="safe-comparison-grid" aria-label="EvaluaciÃ³n segura del backend">
+                @for (card of safeComparisonCards(); track card.label) {
+                  <article class="safe-comparison-card">
+                    <span class="badge badge--brand">{{ card.label }}</span>
+                    <div class="comparison-grid">
+                      <span>
+                        <small>Distancia</small>
+                        <strong>{{ formatMetersAsKm(card.option.distancia) }}</strong>
+                      </span>
+                      <span>
+                        <small>Tiempo</small>
+                        <strong>{{ formatDuration(card.option.tiempoEstimado) }}</strong>
+                      </span>
+                      <span>
+                        <small>Riesgo</small>
+                        <strong>{{ safeRiskLabel(card.option) }}</strong>
+                      </span>
+                      <span>
+                        <small>Score</small>
+                        <strong>{{ riskScoreLabel(card.option.scoreRiesgo) }}</strong>
+                      </span>
+                    </div>
+                    <p>{{ crossedZonesLabel(card.option.cruzaZonasRiesgo, card.option.zonasRiesgo) }}</p>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+
           <section class="route-options-stack">
             <div class="route-options-stack__header">
               <span class="subtle-label">Alternativas</span>
@@ -170,6 +224,7 @@
               }
             </div>
           </section>
+
 
           <section class="panel panel--soft route-steps-panel">
             <div class="panel__header">

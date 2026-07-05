@@ -23,6 +23,8 @@ import {
   ResolvedPlace,
   RouteOption,
   RouteResponse,
+  SafeRouteOption,
+  SafeRouteResponse,
   RouteStep,
 } from '../../models/route-response.model';
 
@@ -41,6 +43,12 @@ interface TransportOption {
 interface RouteMetric {
   label: string;
   value: string;
+}
+
+
+interface SafeComparisonCard {
+  label: string;
+  option: SafeRouteOption;
 }
 
 interface RouteFeatureProperties {
@@ -116,8 +124,11 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   private destinationMarker: mapboxgl.Marker | null = null;
 
   protected readonly isSubmitting = signal(false);
+  protected readonly isSecurityLoading = signal(false);
   protected readonly routeResult = signal<RouteResponse | null>(null);
+  protected readonly safeRouteResult = signal<SafeRouteResponse | null>(null);
   protected readonly requestError = signal<string | null>(null);
+  protected readonly securityWarning = signal<string | null>(null);
   protected readonly selectedRouteId = signal<string | null>(null);
   protected readonly mapReady = signal(false);
 
@@ -147,6 +158,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   protected readonly routeOptions = computed(() => this.routeResult()?.routes ?? []);
 
+
   protected readonly selectedRoute = computed(() => {
     const routes = this.routeOptions();
     const selectedRouteId = this.selectedRouteId();
@@ -173,6 +185,31 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   });
 
   protected readonly selectedRouteSteps = computed(() => this.selectedRoute()?.steps ?? []);
+
+
+  protected readonly safeComparisonCards = computed<SafeComparisonCard[]>(() => {
+    const safeResult = this.safeRouteResult();
+
+    if (!safeResult) {
+      return [];
+    }
+
+    const cards: SafeComparisonCard[] = [];
+
+    if (safeResult.rutaMasRapida) {
+      cards.push({ label: 'MÃ¡s rÃ¡pida', option: safeResult.rutaMasRapida });
+    }
+
+    if (safeResult.rutaMasSegura) {
+      cards.push({ label: 'MÃ¡s segura', option: safeResult.rutaMasSegura });
+    }
+
+    if (safeResult.rutaRecomendada) {
+      cards.push({ label: 'Recomendada', option: safeResult.rutaRecomendada });
+    }
+
+    return cards;
+  });
 
   protected readonly resolvedOrigin = computed(() => this.routeResult()?.originResolved ?? null);
   protected readonly resolvedDestination = computed(
@@ -263,6 +300,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   protected loadDemoRoute(): void {
     this.routeForm.patchValue(DEMO_ROUTE);
     this.requestError.set(null);
+    this.securityWarning.set(null);
   }
 
   protected selectTransportMode(mode: TransportMode): void {
@@ -272,6 +310,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   protected calculateRoute(): void {
     this.requestError.set(null);
+    this.securityWarning.set(null);
 
     if (this.routeForm.invalid) {
       this.routeForm.markAllAsTouched();
@@ -286,6 +325,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
     this.isSubmitting.set(true);
     this.routeResult.set(null);
+    this.safeRouteResult.set(null);
     this.selectedRouteId.set(null);
 
     this.routeService
@@ -300,6 +340,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
           this.routeResult.set(response);
           this.selectedRouteId.set(response.routes[0]?.routeId ?? null);
+          this.loadSafeRouteComparison(response);
         },
         error: (error: HttpErrorResponse) => {
           this.requestError.set(
@@ -312,6 +353,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   protected selectRoute(routeId: string): void {
     this.selectedRouteId.set(routeId);
   }
+
 
   protected hasFieldError(controlName: 'origin' | 'destination'): boolean {
     const control = this.routeForm.controls[controlName];
@@ -372,6 +414,43 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return `${distanceKm.toFixed(1)} km`;
   }
 
+  protected formatMetersAsKm(distanceMeters: number | null | undefined): string {
+    if (distanceMeters == null || Number.isNaN(distanceMeters)) {
+      return '--';
+    }
+
+    return `${(distanceMeters / 1000).toFixed(1)} km`;
+  }
+
+
+  protected safeRiskLabel(option: SafeRouteOption): string {
+    return this.normalizeRiskLabel(option.nivelRiesgo);
+  }
+
+  protected riskScoreLabel(score: number | null | undefined): string {
+    return score == null || Number.isNaN(score) ? 'Sin score' : `Score ${score}`;
+  }
+
+  protected crossedZonesLabel(
+    crosses: boolean | null | undefined,
+    zones: unknown[] | null | undefined,
+  ): string {
+    if (zones?.length) {
+      return `Cruza ${zones.length} zona(s) de riesgo`;
+    }
+
+    if (crosses === true) {
+      return 'Cruza zonas de riesgo';
+    }
+
+    if (crosses === false) {
+      return 'No cruza zonas de riesgo';
+    }
+
+    return 'Sin datos de zonas';
+  }
+
+
   protected formatStepDistance(distanceMeters: number | null | undefined): string {
     if (distanceMeters == null || Number.isNaN(distanceMeters)) {
       return '--';
@@ -402,6 +481,82 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       default:
         return 'Auto';
     }
+  }
+
+  private loadSafeRouteComparison(response: RouteResponse): void {
+    const origin = response.originResolved;
+    const destination = response.destinationResolved;
+
+    if (!this.hasValidCoordinate(origin.latitude, origin.longitude)) {
+      this.securityWarning.set('No se pudo evaluar seguridad porque el origen no tiene coordenadas vÃ¡lidas.');
+      return;
+    }
+
+    if (!this.hasValidCoordinate(destination.latitude, destination.longitude)) {
+      this.securityWarning.set('No se pudo evaluar seguridad porque el destino no tiene coordenadas vÃ¡lidas.');
+      return;
+    }
+
+    this.isSecurityLoading.set(true);
+
+    this.routeService
+      .evaluateSafeRoute({
+        origen: {
+          latitud: origin.latitude,
+          longitud: origin.longitude,
+        },
+        destino: {
+          latitud: destination.latitude,
+          longitud: destination.longitude,
+        },
+      })
+      .pipe(finalize(() => this.isSecurityLoading.set(false)))
+      .subscribe({
+        next: (safeResponse) => {
+          this.safeRouteResult.set(safeResponse);
+          this.securityWarning.set(null);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.safeRouteResult.set(null);
+          this.securityWarning.set(
+            this.parseError(error, 'No fue posible cargar la evaluaciÃ³n de seguridad.'),
+          );
+        },
+      });
+  }
+
+
+  private hasValidCoordinate(latitude: number, longitude: number): boolean {
+    return (
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+    );
+  }
+
+  private normalizeRiskLabel(value: string | null | undefined): string {
+    if (!value?.trim()) {
+      return 'Sin datos de riesgo';
+    }
+
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized.includes('alto')) {
+      return 'Riesgo alto';
+    }
+
+    if (normalized.includes('medio') || normalized.includes('moderado')) {
+      return 'Riesgo medio';
+    }
+
+    if (normalized.includes('bajo')) {
+      return 'Riesgo bajo';
+    }
+
+    return value;
   }
 
   private renderRoute(
