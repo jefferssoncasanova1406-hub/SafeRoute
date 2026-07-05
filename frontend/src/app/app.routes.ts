@@ -34,6 +34,13 @@ export const routes: Routes = [
             (module) => module.ResetPasswordPage,
           ),
       },
+      {
+        path: 'seguimiento/:token',
+        loadComponent: () =>
+          import('./features/tracking/pages/public-tracking/public-tracking').then(
+            (module) => module.PublicTrackingPage,
+          ),
+      },
     ],
   },
   {
@@ -43,6 +50,20 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'panel', pathMatch: 'full' },
       { path: 'panel', component: DashboardPage },
+      {
+        path: 'alertas/historial',
+        loadComponent: () =>
+          import('./features/alerts/pages/alert-history/alert-history').then(
+            (module) => module.AlertHistoryPage,
+          ),
+      },
+      {
+        path: 'alertas/historial/:id',
+        loadComponent: () =>
+          import('./features/alerts/pages/alert-history-detail/alert-history-detail').then(
+            (module) => module.AlertHistoryDetailPage,
+          ),
+      },
       {
         path: 'alertas',
         loadComponent: () =>
@@ -85,6 +106,13 @@ export const routes: Routes = [
             (module) => module.RiskZoneReportPage,
           ),
       },
+      {
+        path: 'reportar',
+        loadComponent: () =>
+          import('./features/alerts/pages/incident-report/incident-report').then(
+            (module) => module.IncidentReportPage,
+          ),
+      },
     ],
   },
   {
@@ -94,6 +122,13 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'zonas', pathMatch: 'full' },
       { path: 'zonas', component: RiskZoneManagementPage },
+      {
+        path: 'moderacion',
+        loadComponent: () =>
+          import('./features/alerts/pages/alert-moderation/alert-moderation').then(
+            (module) => module.AlertModerationPage,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: '/inicio' },

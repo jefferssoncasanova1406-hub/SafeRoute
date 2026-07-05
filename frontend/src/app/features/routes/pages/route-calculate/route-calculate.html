@@ -138,6 +138,113 @@
             </div>
           </section>
 
+          <section class="route-comparison-panel" aria-labelledby="route-comparison-title">
+            <div class="route-options-stack__header">
+              <span class="subtle-label">ComparaciÃ³n de alternativas</span>
+              <h3 id="route-comparison-title">Distancia, tiempo y seguridad</h3>
+              <p>
+                La ruta recomendada usa la alternativa inicial que ya selecciona el flujo actual.
+                La seguridad solo se muestra cuando el backend devuelve esos datos.
+              </p>
+            </div>
+
+            @if (securityWarning(); as warning) {
+              <div class="notice notice--warning" role="status">
+                <strong>Seguridad no disponible para la comparaciÃ³n.</strong>
+                <p>{{ warning }}</p>
+              </div>
+            }
+
+            @if (isSecurityLoading()) {
+              <div class="notice" role="status">
+                <strong>Consultando seguridad.</strong>
+                <p>Las rutas calculadas permanecen disponibles.</p>
+              </div>
+            }
+
+            <div class="route-options-grid">
+              @for (comparison of routeComparisons(); track comparison.route.routeId) {
+                <button
+                  class="route-option-card"
+                  [class.route-option-card--active]="isRouteSelected(comparison.route.routeId)"
+                  type="button"
+                  [attr.aria-pressed]="isRouteSelected(comparison.route.routeId)"
+                  (click)="selectRoute(comparison.route.routeId)"
+                >
+                  <div class="route-option-card__top">
+                    <div>
+                      <span class="subtle-label">Ruta {{ comparison.index + 1 }}</span>
+                      <h4>{{ comparison.route.summary }}</h4>
+                    </div>
+                    <span class="badge badge--accent">
+                      {{ formatDuration(comparison.route.durationMinutes) }}
+                    </span>
+                  </div>
+
+                  @if (comparison.labels.length > 0) {
+                    <div class="label-row" aria-label="Etiquetas de comparaciÃ³n">
+                      @for (label of comparison.labels; track label) {
+                        <span class="badge badge--brand">{{ label }}</span>
+                      }
+                    </div>
+                  }
+
+                  <div class="comparison-grid">
+                    <span>
+                      <small>Distancia</small>
+                      <strong>{{ formatDistance(comparison.route.distanceKm) }}</strong>
+                    </span>
+                    <span>
+                      <small>Tiempo</small>
+                      <strong>{{ formatDuration(comparison.route.durationMinutes) }}</strong>
+                    </span>
+                    <span>
+                      <small>Riesgo</small>
+                      <strong>{{ routeRiskLabel(comparison.route) }}</strong>
+                    </span>
+                    <span>
+                      <small>Score</small>
+                      <strong>{{ riskScoreLabel(comparison.route.scoreRiesgo) }}</strong>
+                    </span>
+                  </div>
+
+                  <p class="route-option-card__note">
+                    {{ crossedZonesLabel(comparison.route.cruzaZonasRiesgo, comparison.route.zonasRiesgo) }}
+                  </p>
+                </button>
+              }
+            </div>
+
+            @if (safeComparisonCards().length > 0) {
+              <div class="safe-comparison-grid" aria-label="EvaluaciÃ³n segura del backend">
+                @for (card of safeComparisonCards(); track card.label) {
+                  <article class="safe-comparison-card">
+                    <span class="badge badge--brand">{{ card.label }}</span>
+                    <div class="comparison-grid">
+                      <span>
+                        <small>Distancia</small>
+                        <strong>{{ formatMetersAsKm(card.option.distancia) }}</strong>
+                      </span>
+                      <span>
+                        <small>Tiempo</small>
+                        <strong>{{ formatDuration(card.option.tiempoEstimado) }}</strong>
+                      </span>
+                      <span>
+                        <small>Riesgo</small>
+                        <strong>{{ safeRiskLabel(card.option) }}</strong>
+                      </span>
+                      <span>
+                        <small>Score</small>
+                        <strong>{{ riskScoreLabel(card.option.scoreRiesgo) }}</strong>
+                      </span>
+                    </div>
+                    <p>{{ crossedZonesLabel(card.option.cruzaZonasRiesgo, card.option.zonasRiesgo) }}</p>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+
           <section class="route-options-stack">
             <div class="route-options-stack__header">
               <span class="subtle-label">Alternativas</span>
@@ -169,6 +276,76 @@
                 </button>
               }
             </div>
+          </section>
+
+          <section class="tracking-panel" aria-labelledby="tracking-title">
+            <div class="route-options-stack__header">
+              <span class="subtle-label">Seguimiento</span>
+              <h3 id="tracking-title">Compartir ubicaciÃ³n</h3>
+              <p>Genera un enlace pÃºblico para consultar la Ãºltima ubicaciÃ³n disponible.</p>
+            </div>
+
+            @if (!activeTracking()) {
+              <button
+                class="button"
+                type="button"
+                [disabled]="!canShareLocation()"
+                (click)="shareLocation()"
+              >
+                {{ isSharing() ? 'Compartiendo...' : 'Compartir ubicaciÃ³n' }}
+              </button>
+            } @else {
+              <div class="tracking-card">
+                <div>
+                  <span class="subtle-label">Enlace pÃºblico</span>
+                  <p class="tracking-link">{{ publicTrackingLink() }}</p>
+                </div>
+
+                <div class="pill-list">
+                  <span class="tag">Estado {{ trackingStatusLabel() }}</span>
+                  <span class="tag">Expira {{ formattedTrackingExpiration() }}</span>
+                </div>
+
+                <div class="button-row">
+                  <button
+                    class="button button--secondary"
+                    type="button"
+                    [disabled]="!canUsePublicLink()"
+                    (click)="copyTrackingLink()"
+                  >
+                    Copiar enlace
+                  </button>
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    [disabled]="!canUsePublicLink()"
+                    (click)="shareTrackingLink()"
+                  >
+                    Compartir
+                  </button>
+                  <button
+                    class="button button--secondary"
+                    type="button"
+                    [disabled]="isStoppingShare() || trackingRevoked()"
+                    (click)="stopTracking()"
+                  >
+                    {{ isStoppingShare() ? 'Deteniendo...' : 'Detener seguimiento' }}
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (shareMessage(); as message) {
+              <div class="notice notice--success" role="status">
+                <p>{{ message }}</p>
+              </div>
+            }
+
+            @if (shareError(); as error) {
+              <div class="notice notice--error" role="alert">
+                <p>{{ error }}</p>
+              </div>
+            }
           </section>
 
           <section class="panel panel--soft route-steps-panel">

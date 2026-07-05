@@ -1,0 +1,75 @@
+.history-detail-card {
+  max-width: 60rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.history-detail-card__hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: #12313a;
+  color: #ffffff;
+}
+
+.history-detail-card__hero h2 {
+  margin: 0.25rem 0 0.5rem;
+  color: #ffffff;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.history-detail-card__hero p,
+.history-detail-card__hero .subtle-label {
+  color: rgba(244, 247, 248, 0.7);
+}
+
+.history-detail-card__body {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.history-detail-card__body section {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.verification-panel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.verification-panel__header {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.verification-panel__header h3 {
+  font-size: 1.1rem;
+}
+
+.verification-panel__header p {
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+}
+
+.verification-panel__body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.metric-tile__value--text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .history-detail-card__hero {
+    flex-direction: column;
+  }
+}

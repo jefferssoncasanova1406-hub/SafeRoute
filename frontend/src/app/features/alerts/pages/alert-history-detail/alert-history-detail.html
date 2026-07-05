@@ -1,0 +1,106 @@
+<section class="page alert-history-detail-page">
+  <header class="app-page-header">
+    <div>
+      <h1>Detalle histórico</h1>
+      <p>Información del reporte registrado en el historial comunitario.</p>
+    </div>
+    <a class="button button--secondary" routerLink="/app/alertas/historial">Volver al historial</a>
+  </header>
+
+  @if (isLoading()) {
+    <div class="empty-state" aria-live="polite">
+      <h2>Cargando detalle</h2>
+      <p>Consultando el reporte seleccionado.</p>
+    </div>
+  } @else if (requestError(); as errorMessage) {
+    <div class="notice notice--error" role="alert">
+      <strong>Detalle no disponible</strong>
+      <p>{{ errorMessage }}</p>
+    </div>
+    <a class="button button--secondary" routerLink="/app/alertas/historial">Volver al historial</a>
+  } @else if (alert(); as item) {
+    <article class="panel history-detail-card">
+      <div class="history-detail-card__hero">
+        <div>
+          <span class="subtle-label">Alerta {{ item.idAlerta }}</span>
+          <h2>{{ item.tipoIncidente }}</h2>
+          <p>{{ item.zonaAfectada }}</p>
+        </div>
+        <span [class]="'badge badge--' + riskTone(item.nivelRiesgo)">
+          {{ item.nivelRiesgo || 'Sin nivel' }}
+        </span>
+      </div>
+
+      <div class="panel__body history-detail-card__body">
+        <section>
+          <span class="subtle-label">Descripción</span>
+          <p>{{ item.descripcion }}</p>
+        </section>
+
+        <div class="metric-grid">
+          <article class="metric-tile">
+            <span class="metric-tile__label">Estado</span>
+            <strong class="metric-tile__value metric-tile__value--text">{{ item.estado }}</strong>
+          </article>
+          <article class="metric-tile">
+            <span class="metric-tile__label">Emisión</span>
+            <strong class="metric-tile__value metric-tile__value--text">
+              {{ formatDate(item.fechaEmision) }}
+            </strong>
+          </article>
+          <article class="metric-tile">
+            <span class="metric-tile__label">Zona afectada</span>
+            <strong class="metric-tile__value metric-tile__value--text">
+              {{ item.zonaAfectada }}
+            </strong>
+          </article>
+        </div>
+
+        <section class="verification-panel" aria-labelledby="community-verification-title">
+          <div class="verification-panel__header">
+            <span class="panel__kicker">Comunidad</span>
+            <h3 id="community-verification-title">Verificación comunitaria</h3>
+            <p>Confirma o rechaza este reporte según la información disponible.</p>
+          </div>
+          <div class="verification-panel__body">
+            @if (verificationMessage(); as message) {
+              <div class="notice notice--success" role="status">
+                <strong>Verificación registrada</strong>
+                <p>{{ message }}</p>
+              </div>
+            }
+            @if (verificationError(); as errorMessage) {
+              <div class="notice notice--error" role="alert">
+                <strong>No se registró la verificación</strong>
+                <p>{{ errorMessage }}</p>
+              </div>
+            }
+
+            <div class="button-row">
+              <button
+                class="button"
+                type="button"
+                (click)="verifyIncident(true)"
+                [disabled]="isVerifying() || actionsLocked()"
+              >
+                Confirmar reporte
+              </button>
+              <button
+                class="button button--danger"
+                type="button"
+                (click)="verifyIncident(false)"
+                [disabled]="isVerifying() || actionsLocked()"
+              >
+                Rechazar reporte
+              </button>
+            </div>
+
+            @if (isVerifying()) {
+              <p class="subtle-label" role="status">Procesando verificación...</p>
+            }
+          </div>
+        </section>
+      </div>
+    </article>
+  }
+</section>

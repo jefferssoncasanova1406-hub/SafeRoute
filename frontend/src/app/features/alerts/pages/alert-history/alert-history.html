@@ -1,0 +1,124 @@
+<section class="page alert-history-page">
+  <header class="app-page-header">
+    <div>
+      <h1>Historial de alertas</h1>
+      <p>Consulta reportes e incidentes registrados por la comunidad.</p>
+    </div>
+    <div class="app-page-header__actions">
+      <a class="button button--secondary" routerLink="/app/alertas">Volver a alertas</a>
+      <button
+        class="button"
+        type="button"
+        (click)="loadHistory()"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </header>
+
+  <article class="panel">
+    <div class="panel__header">
+      <span class="panel__kicker">Filtros</span>
+      <h2 class="panel__title">Buscar en el historial</h2>
+      <p class="panel__copy">Filtra por tipo, estado o rango de fechas de emisión.</p>
+    </div>
+    <div class="panel__body">
+      <form class="form-grid" [formGroup]="filterForm" (ngSubmit)="applyFilters()" novalidate>
+        <div class="field-grid field-grid--2">
+          <div class="field">
+            <label for="history-type">Tipo de incidente</label>
+            <input
+              id="history-type"
+              class="control"
+              type="text"
+              formControlName="tipoIncidente"
+              placeholder="Ej. Robo"
+            />
+          </div>
+          <div class="field">
+            <label for="history-state">Estado</label>
+            <input
+              id="history-state"
+              class="control"
+              type="text"
+              formControlName="estado"
+              placeholder="Ej. APROBADO"
+            />
+          </div>
+        </div>
+
+        <div class="field-grid field-grid--2">
+          <div class="field">
+            <label for="history-start">Fecha inicial</label>
+            <input id="history-start" class="control" type="date" formControlName="fechaInicio" />
+          </div>
+          <div class="field">
+            <label for="history-end">Fecha final</label>
+            <input id="history-end" class="control" type="date" formControlName="fechaFin" />
+          </div>
+        </div>
+
+        @if (hasDateRangeError()) {
+          <p class="field-error" role="alert">
+            La fecha final no puede ser anterior a la fecha inicial.
+          </p>
+        }
+
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="isLoading()">
+            {{ isLoading() ? 'Consultando...' : 'Aplicar filtros' }}
+          </button>
+          <button
+            class="button button--secondary"
+            type="button"
+            (click)="clearFilters()"
+            [disabled]="isLoading()"
+          >
+            Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+  </article>
+
+  @if (requestError(); as errorMessage) {
+    <div class="notice notice--error" role="alert">
+      <strong>No se pudo cargar el historial.</strong>
+      <p>{{ errorMessage }}</p>
+    </div>
+  }
+
+  @if (isLoading() && sortedHistory().length === 0) {
+    <div class="empty-state" aria-live="polite">
+      <h2>Consultando historial</h2>
+      <p>Estamos obteniendo los reportes disponibles.</p>
+    </div>
+  } @else {
+    <div class="history-list" aria-live="polite">
+      @for (alert of sortedHistory(); track alert.idAlerta) {
+        <a class="list-card history-card" [routerLink]="['/app/alertas/historial', alert.idAlerta]">
+          <div class="list-card__top">
+            <div>
+              <span class="subtle-label">Alerta {{ alert.idAlerta }} · {{ alert.zonaAfectada }}</span>
+              <h3 class="list-card__title">{{ alert.tipoIncidente }}</h3>
+            </div>
+            <span [class]="'badge badge--' + riskTone(alert.nivelRiesgo)">
+              {{ alert.nivelRiesgo || 'Sin nivel' }}
+            </span>
+          </div>
+          <p class="list-card__copy">{{ alert.descripcion }}</p>
+          <div class="history-card__meta">
+            <span>{{ alert.estado }}</span>
+            <span>{{ formatDate(alert.fechaEmision) }}</span>
+          </div>
+        </a>
+      } @empty {
+        <div class="empty-state">
+          <h2>No hay alertas históricas</h2>
+          <p>No se encontraron registros con los filtros actuales.</p>
+        </div>
+      }
+    </div>
+  }
+</section>

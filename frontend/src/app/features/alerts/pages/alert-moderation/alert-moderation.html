@@ -1,0 +1,104 @@
+<section class="page alert-moderation-page">
+  <header class="app-page-header">
+    <div>
+      <h1>Moderación de reportes</h1>
+      <p>Revisa reportes ciudadanos pendientes y define su estado final.</p>
+    </div>
+    <div class="app-page-header__actions">
+      <button
+        class="button button--secondary"
+        type="button"
+        (click)="loadPendingReports()"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </header>
+
+  @if (loadError(); as errorMessage) {
+    <div class="notice notice--error" role="alert">
+      <strong>No se pudieron cargar los pendientes.</strong>
+      <p>{{ errorMessage }}</p>
+    </div>
+  }
+
+  @if (operationMessage(); as message) {
+    <div
+      [class]="'notice ' + (operationTone() === 'success' ? 'notice--success' : 'notice--error')"
+      role="alert"
+    >
+      <strong>{{ operationTone() === 'success' ? 'Reporte procesado' : 'No se procesó el reporte' }}</strong>
+      <p>{{ message }}</p>
+    </div>
+  }
+
+  @if (isLoading() && pendingReports().length === 0) {
+    <div class="empty-state" aria-live="polite">
+      <h2>Cargando reportes</h2>
+      <p>Estamos obteniendo los reportes pendientes de moderación.</p>
+    </div>
+  } @else {
+    <div class="moderation-list" aria-live="polite">
+      @for (report of pendingReports(); track report.idAlerta) {
+        <article class="list-card moderation-card">
+          <div class="list-card__top">
+            <div>
+              <span class="subtle-label">Reporte {{ report.idAlerta }}</span>
+              <h2 class="list-card__title">{{ report.tipoIncidente }}</h2>
+            </div>
+            <span [class]="'badge badge--' + riskTone(report.nivelRiesgo)">
+              {{ report.nivelRiesgo || 'Sin nivel' }}
+            </span>
+          </div>
+          <p class="list-card__copy">{{ report.descripcion }}</p>
+          <dl class="moderation-card__meta">
+            <div>
+              <dt>Zona afectada</dt>
+              <dd>{{ report.zonaAfectada }}</dd>
+            </div>
+            <div>
+              <dt>Fecha</dt>
+              <dd>{{ formatDate(report.fechaEmision) }}</dd>
+            </div>
+            <div>
+              <dt>Estado</dt>
+              <dd>{{ report.estado }}</dd>
+            </div>
+          </dl>
+          <div class="button-row">
+            <button
+              class="button"
+              type="button"
+              (click)="processReport(report, 'APROBADO')"
+              [disabled]="isProcessing(report.idAlerta)"
+            >
+              APROBADO
+            </button>
+            <button
+              class="button button--secondary"
+              type="button"
+              (click)="processReport(report, 'RECHAZADO')"
+              [disabled]="isProcessing(report.idAlerta)"
+            >
+              RECHAZADO
+            </button>
+            <button
+              class="button button--danger"
+              type="button"
+              (click)="processReport(report, 'FALSO')"
+              [disabled]="isProcessing(report.idAlerta)"
+            >
+              FALSO
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty-state">
+          <h2>No hay reportes pendientes</h2>
+          <p>Cuando existan reportes por revisar, aparecerán en esta lista.</p>
+        </div>
+      }
+    </div>
+  }
+</section>

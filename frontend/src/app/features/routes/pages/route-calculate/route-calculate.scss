@@ -9,6 +9,8 @@
 .route-result-body,
 .route-summary-card,
 .route-options-stack,
+.route-comparison-panel,
+.tracking-panel,
 .route-steps-list {
   display: grid;
   gap: 1rem;
@@ -160,6 +162,67 @@
   line-height: 1.1;
 }
 
+.route-comparison-panel,
+.tracking-panel {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.label-row,
+.safe-comparison-grid,
+.comparison-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.label-row {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, max-content));
+}
+
+.comparison-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comparison-grid span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.comparison-grid small,
+.route-option-card__note,
+.safe-comparison-card p {
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.comparison-grid strong {
+  font-size: 0.96rem;
+}
+
+.safe-comparison-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.safe-comparison-card,
+.tracking-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--brand-soft);
+}
+
+.tracking-link {
+  overflow-wrap: anywhere;
+  color: var(--ink-strong);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .route-steps-panel {
   overflow: hidden;
 }
@@ -204,7 +267,8 @@
 }
 
 @media (max-width: 1200px) {
-  .route-options-grid {
+  .route-options-grid,
+  .safe-comparison-grid {
     grid-template-columns: 1fr;
   }
 }

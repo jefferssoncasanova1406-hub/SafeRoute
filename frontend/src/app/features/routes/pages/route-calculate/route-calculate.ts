@@ -18,11 +18,16 @@ import { finalize } from 'rxjs';
 
 import { appRuntimeConfig } from '../../../../core/config/runtime-config';
 import { RouteService } from '../../../../core/services/route.service';
+import { PrivacyService } from '../../../privacy/services/privacy.service';
+import { TrackingService } from '../../../tracking/services/tracking.service';
+import { ShareTrackingResponse } from '../../../tracking/models/tracking.model';
 import { RouteRequest, TransportMode } from '../../models/route-request.model';
 import {
   ResolvedPlace,
   RouteOption,
   RouteResponse,
+  SafeRouteOption,
+  SafeRouteResponse,
   RouteStep,
 } from '../../models/route-response.model';
 
@@ -41,6 +46,17 @@ interface TransportOption {
 interface RouteMetric {
   label: string;
   value: string;
+}
+
+interface RouteComparison {
+  route: RouteOption;
+  index: number;
+  labels: string[];
+}
+
+interface SafeComparisonCard {
+  label: string;
+  option: SafeRouteOption;
 }
 
 interface RouteFeatureProperties {
@@ -107,6 +123,8 @@ const DEMO_ROUTE: Pick<RouteRequest, 'origin' | 'destination' | 'transportMode'>
 export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly routeService = inject(RouteService);
+  private readonly privacyService = inject(PrivacyService);
+  private readonly trackingService = inject(TrackingService);
 
   @ViewChild('mapContainer')
   private mapContainer?: ElementRef<HTMLDivElement>;
@@ -116,8 +134,17 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   private destinationMarker: mapboxgl.Marker | null = null;
 
   protected readonly isSubmitting = signal(false);
+  protected readonly isSecurityLoading = signal(false);
+  protected readonly isSharing = signal(false);
+  protected readonly isStoppingShare = signal(false);
   protected readonly routeResult = signal<RouteResponse | null>(null);
+  protected readonly safeRouteResult = signal<SafeRouteResponse | null>(null);
   protected readonly requestError = signal<string | null>(null);
+  protected readonly securityWarning = signal<string | null>(null);
+  protected readonly shareMessage = signal<string | null>(null);
+  protected readonly shareError = signal<string | null>(null);
+  protected readonly activeTracking = signal<ShareTrackingResponse | null>(null);
+  protected readonly trackingRevoked = signal(false);
   protected readonly selectedRouteId = signal<string | null>(null);
   protected readonly mapReady = signal(false);
 
@@ -147,6 +174,28 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   protected readonly routeOptions = computed(() => this.routeResult()?.routes ?? []);
 
+  protected readonly publicTrackingLink = computed(() => {
+    const token = this.activeTracking()?.tokenSeguimiento?.trim();
+
+    if (!token || typeof window === 'undefined') {
+      return null;
+    }
+
+    return `${window.location.origin}/seguimiento/${encodeURIComponent(token)}`;
+  });
+
+  protected readonly canShareLocation = computed(
+    () =>
+      !!this.routeResult() &&
+      !!this.selectedRoute() &&
+      !this.isSharing() &&
+      !this.activeTracking(),
+  );
+
+  protected readonly canUsePublicLink = computed(
+    () => !!this.publicTrackingLink() && !this.trackingRevoked() && !this.isStoppingShare(),
+  );
+
   protected readonly selectedRoute = computed(() => {
     const routes = this.routeOptions();
     const selectedRouteId = this.selectedRouteId();
@@ -168,11 +217,61 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return [
       { label: 'Duración', value: this.formatDuration(route.durationMinutes) },
       { label: 'Distancia', value: this.formatDistance(route.distanceKm) },
+      { label: 'Seguridad', value: this.routeRiskLabel(route) },
       { label: 'Pasos', value: `${route.steps.length}` },
     ];
   });
 
   protected readonly selectedRouteSteps = computed(() => this.selectedRoute()?.steps ?? []);
+
+  protected readonly routeComparisons = computed<RouteComparison[]>(() => {
+    const routes = this.routeOptions();
+    const fastestDuration = this.minimumDuration(routes);
+    const safestRisk = this.minimumRiskScore(routes);
+    const recommendedRouteId = this.recommendedRouteId(routes);
+
+    return routes.map((route, index) => {
+      const labels: string[] = [];
+
+      if (fastestDuration !== null && route.durationMinutes === fastestDuration) {
+        labels.push('MÃ¡s rÃ¡pida');
+      }
+
+      if (safestRisk !== null && route.scoreRiesgo === safestRisk) {
+        labels.push('MÃ¡s segura');
+      }
+
+      if (route.routeId === recommendedRouteId || route.recomendada === true) {
+        labels.push('Recomendada');
+      }
+
+      return { route, index, labels };
+    });
+  });
+
+  protected readonly safeComparisonCards = computed<SafeComparisonCard[]>(() => {
+    const safeResult = this.safeRouteResult();
+
+    if (!safeResult) {
+      return [];
+    }
+
+    const cards: SafeComparisonCard[] = [];
+
+    if (safeResult.rutaMasRapida) {
+      cards.push({ label: 'MÃ¡s rÃ¡pida', option: safeResult.rutaMasRapida });
+    }
+
+    if (safeResult.rutaMasSegura) {
+      cards.push({ label: 'MÃ¡s segura', option: safeResult.rutaMasSegura });
+    }
+
+    if (safeResult.rutaRecomendada) {
+      cards.push({ label: 'Recomendada', option: safeResult.rutaRecomendada });
+    }
+
+    return cards;
+  });
 
   protected readonly resolvedOrigin = computed(() => this.routeResult()?.originResolved ?? null);
   protected readonly resolvedDestination = computed(
@@ -263,6 +362,9 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   protected loadDemoRoute(): void {
     this.routeForm.patchValue(DEMO_ROUTE);
     this.requestError.set(null);
+    this.securityWarning.set(null);
+    this.shareError.set(null);
+    this.shareMessage.set(null);
   }
 
   protected selectTransportMode(mode: TransportMode): void {
@@ -272,6 +374,9 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   protected calculateRoute(): void {
     this.requestError.set(null);
+    this.securityWarning.set(null);
+    this.shareError.set(null);
+    this.shareMessage.set(null);
 
     if (this.routeForm.invalid) {
       this.routeForm.markAllAsTouched();
@@ -286,6 +391,9 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
     this.isSubmitting.set(true);
     this.routeResult.set(null);
+    this.safeRouteResult.set(null);
+    this.activeTracking.set(null);
+    this.trackingRevoked.set(false);
     this.selectedRouteId.set(null);
 
     this.routeService
@@ -300,6 +408,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
           this.routeResult.set(response);
           this.selectedRouteId.set(response.routes[0]?.routeId ?? null);
+          this.loadSafeRouteComparison(response);
         },
         error: (error: HttpErrorResponse) => {
           this.requestError.set(
@@ -311,6 +420,113 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   protected selectRoute(routeId: string): void {
     this.selectedRouteId.set(routeId);
+  }
+
+  protected shareLocation(): void {
+    if (!this.canShareLocation()) {
+      return;
+    }
+
+    this.isSharing.set(true);
+    this.shareError.set(null);
+    this.shareMessage.set(null);
+
+    this.privacyService.getPreferences().subscribe({
+      next: (preferences) => {
+        if (!preferences.realTimeLocationEnabled || !preferences.personalDataSharingEnabled) {
+          this.isSharing.set(false);
+          this.shareError.set(
+            'Activa la ubicaciÃ³n en tiempo real y el uso compartido de datos en Privacidad antes de compartir el seguimiento.',
+          );
+          return;
+        }
+
+        this.createTrackingLink();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isSharing.set(false);
+        this.shareError.set(
+          this.parseError(error, 'No fue posible validar tu configuraciÃ³n de privacidad.'),
+        );
+      },
+    });
+  }
+
+  protected copyTrackingLink(): void {
+    const link = this.publicTrackingLink();
+
+    if (!link || !this.canUsePublicLink()) {
+      return;
+    }
+
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      this.shareError.set('Tu navegador no permite copiar el enlace automÃ¡ticamente.');
+      return;
+    }
+
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        this.shareError.set(null);
+        this.shareMessage.set('Enlace copiado al portapapeles.');
+      })
+      .catch(() => {
+        this.shareError.set('No fue posible copiar el enlace. SelecciÃ³nalo manualmente.');
+      });
+  }
+
+  protected shareTrackingLink(): void {
+    const link = this.publicTrackingLink();
+
+    if (!link || !this.canUsePublicLink()) {
+      return;
+    }
+
+    if (typeof navigator === 'undefined' || !navigator.share) {
+      this.shareError.set('Tu navegador no permite compartir directamente. Puedes copiar el enlace.');
+      return;
+    }
+
+    navigator
+      .share({
+        title: 'Seguimiento SafeRoute',
+        text: 'Sigue mi Ãºltima ubicaciÃ³n disponible en SafeRoute.',
+        url: link,
+      })
+      .then(() => {
+        this.shareError.set(null);
+        this.shareMessage.set('Enlace enviado para compartir.');
+      })
+      .catch(() => {
+        this.shareError.set('No se completÃ³ la acciÃ³n de compartir.');
+      });
+  }
+
+  protected stopTracking(): void {
+    const token = this.activeTracking()?.tokenSeguimiento?.trim();
+
+    if (!token || this.isStoppingShare()) {
+      return;
+    }
+
+    this.isStoppingShare.set(true);
+    this.shareError.set(null);
+    this.shareMessage.set(null);
+
+    this.trackingService
+      .stop(token)
+      .pipe(finalize(() => this.isStoppingShare.set(false)))
+      .subscribe({
+        next: (message) => {
+          this.trackingRevoked.set(true);
+          this.shareMessage.set(message || 'Seguimiento detenido.');
+        },
+        error: (error: HttpErrorResponse) => {
+          this.shareError.set(
+            this.parseError(error, 'No fue posible detener el seguimiento.'),
+          );
+        },
+      });
   }
 
   protected hasFieldError(controlName: 'origin' | 'destination'): boolean {
@@ -372,6 +588,63 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return `${distanceKm.toFixed(1)} km`;
   }
 
+  protected formatMetersAsKm(distanceMeters: number | null | undefined): string {
+    if (distanceMeters == null || Number.isNaN(distanceMeters)) {
+      return '--';
+    }
+
+    return `${(distanceMeters / 1000).toFixed(1)} km`;
+  }
+
+  protected routeRiskLabel(route: RouteOption): string {
+    return this.normalizeRiskLabel(route.nivelRiesgo);
+  }
+
+  protected safeRiskLabel(option: SafeRouteOption): string {
+    return this.normalizeRiskLabel(option.nivelRiesgo);
+  }
+
+  protected riskScoreLabel(score: number | null | undefined): string {
+    return score == null || Number.isNaN(score) ? 'Sin score' : `Score ${score}`;
+  }
+
+  protected crossedZonesLabel(
+    crosses: boolean | null | undefined,
+    zones: unknown[] | null | undefined,
+  ): string {
+    if (zones?.length) {
+      return `Cruza ${zones.length} zona(s) de riesgo`;
+    }
+
+    if (crosses === true) {
+      return 'Cruza zonas de riesgo';
+    }
+
+    if (crosses === false) {
+      return 'No cruza zonas de riesgo';
+    }
+
+    return 'Sin datos de zonas';
+  }
+
+  protected formattedTrackingExpiration(): string {
+    const value = this.activeTracking()?.fechaExpiracionEstimada;
+
+    if (!value) {
+      return 'Sin expiraciÃ³n informada';
+    }
+
+    return value;
+  }
+
+  protected trackingStatusLabel(): string {
+    if (this.trackingRevoked()) {
+      return 'REVOCADO';
+    }
+
+    return this.activeTracking()?.estadoLink || 'ACTIVO';
+  }
+
   protected formatStepDistance(distanceMeters: number | null | undefined): string {
     if (distanceMeters == null || Number.isNaN(distanceMeters)) {
       return '--';
@@ -402,6 +675,119 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       default:
         return 'Auto';
     }
+  }
+
+  private loadSafeRouteComparison(response: RouteResponse): void {
+    const origin = response.originResolved;
+    const destination = response.destinationResolved;
+
+    if (!this.hasValidCoordinate(origin.latitude, origin.longitude)) {
+      this.securityWarning.set('No se pudo evaluar seguridad porque el origen no tiene coordenadas vÃ¡lidas.');
+      return;
+    }
+
+    if (!this.hasValidCoordinate(destination.latitude, destination.longitude)) {
+      this.securityWarning.set('No se pudo evaluar seguridad porque el destino no tiene coordenadas vÃ¡lidas.');
+      return;
+    }
+
+    this.isSecurityLoading.set(true);
+
+    this.routeService
+      .evaluateSafeRoute({
+        origen: {
+          latitud: origin.latitude,
+          longitud: origin.longitude,
+        },
+        destino: {
+          latitud: destination.latitude,
+          longitud: destination.longitude,
+        },
+      })
+      .pipe(finalize(() => this.isSecurityLoading.set(false)))
+      .subscribe({
+        next: (safeResponse) => {
+          this.safeRouteResult.set(safeResponse);
+          this.securityWarning.set(null);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.safeRouteResult.set(null);
+          this.securityWarning.set(
+            this.parseError(error, 'No fue posible cargar la evaluaciÃ³n de seguridad.'),
+          );
+        },
+      });
+  }
+
+  private createTrackingLink(): void {
+    this.trackingService
+      .share()
+      .pipe(finalize(() => this.isSharing.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.activeTracking.set(response);
+          this.trackingRevoked.set(false);
+          this.shareMessage.set('Seguimiento activo. Ya puedes copiar o compartir el enlace.');
+        },
+        error: (error: HttpErrorResponse) => {
+          this.shareError.set(
+            this.parseError(error, 'No fue posible compartir la ubicaciÃ³n.'),
+          );
+        },
+      });
+  }
+
+  private minimumDuration(routes: RouteOption[]): number | null {
+    const durations = routes
+      .map((route) => route.durationMinutes)
+      .filter((duration) => typeof duration === 'number' && !Number.isNaN(duration));
+
+    return durations.length ? Math.min(...durations) : null;
+  }
+
+  private minimumRiskScore(routes: RouteOption[]): number | null {
+    const scores = routes
+      .map((route) => route.scoreRiesgo)
+      .filter((score): score is number => typeof score === 'number' && !Number.isNaN(score));
+
+    return scores.length ? Math.min(...scores) : null;
+  }
+
+  private recommendedRouteId(routes: RouteOption[]): string | null {
+    return routes.find((route) => route.recomendada === true)?.routeId ?? routes[0]?.routeId ?? null;
+  }
+
+  private hasValidCoordinate(latitude: number, longitude: number): boolean {
+    return (
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+    );
+  }
+
+  private normalizeRiskLabel(value: string | null | undefined): string {
+    if (!value?.trim()) {
+      return 'Sin datos de riesgo';
+    }
+
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized.includes('alto')) {
+      return 'Riesgo alto';
+    }
+
+    if (normalized.includes('medio') || normalized.includes('moderado')) {
+      return 'Riesgo medio';
+    }
+
+    if (normalized.includes('bajo')) {
+      return 'Riesgo bajo';
+    }
+
+    return value;
   }
 
   private renderRoute(

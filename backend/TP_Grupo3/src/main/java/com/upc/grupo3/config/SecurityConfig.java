@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/rutas/**").authenticated()
                         .requestMatchers("/api/privacy/preferences/**").authenticated()
                         .requestMatchers("/api/admin/validate-access").authenticated()
+                        .requestMatchers("/api/alertas/moderacion/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/risk-zones/*").authenticated()
                         .requestMatchers("/api/risk-zones/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

@@ -51,6 +51,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenRevocationService tokenRevocationService;
+    private final AlertCommunityService alertCommunityService;
 
     @Transactional
     //HU4
@@ -189,210 +190,44 @@ public class AuthService {
                 .message("Configuración de alertas y notificaciones actualizada con éxito") // Escenario 3
                 .build();
     }
-
-    // HU18 - Escenario 1 y 3: Obtener alertas con filtros y ordenadas de más reciente a más antigua
+    // HU18 - Escenario 1 y 3: Obtener alertas con filtros y ordenadas de mas reciente a mas antigua
     @Transactional(readOnly = true)
     public java.util.List<com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO> getAlertsHistory(
             String email, String tipoIncidente, String estado, String fechaInicio, String fechaFin) {
-
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el correo: " + email));
-
-        log.info("Consultando historial de alertas para: {}. Filtros -> tipo: {}, estado: {}", email, tipoIncidente, estado);
-
-        // Simulamos el almacenamiento histórico de la BD respetando el orden cronológico descendente
-        java.util.List<com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO> alertas = new java.util.ArrayList<>();
-
-        alertas.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(101)
-                .tipoIncidente("Robo")
-                .descripcion("Reporte de robo a mano armada cerca de tu ruta frecuente.")
-                .nivelRiesgo("ALTO")
-                .fechaEmision(LocalDateTime.now().minusMinutes(15)) // La más reciente primero
-                .estado("NO_LEIDA")
-                .zonaAfectada("Santiago de Surco")
-                .build());
-
-        alertas.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(102)
-                .tipoIncidente("Accidente")
-                .descripcion("Colisión vehicular bloquea intersección segura.")
-                .nivelRiesgo("MEDIO")
-                .fechaEmision(LocalDateTime.now().minusHours(2))
-                .estado("LEIDA")
-                .zonaAfectada("San Miguel")
-                .build());
-
-        alertas.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(103)
-                .tipoIncidente("Asalto")
-                .descripcion("Actividad sospechosa reportada por la comunidad.")
-                .nivelRiesgo("ALTO")
-                .fechaEmision(LocalDateTime.now().minusDays(2))
-                .estado("LEIDA")
-                .zonaAfectada("Cercado de Lima")
-                .build());
-
-        // Aplicación estricta de filtros en el stream (Escenario 3)
-        return alertas.stream()
-                .filter(a -> tipoIncidente == null || a.getTipoIncidente().equalsIgnoreCase(tipoIncidente))
-                .filter(a -> estado == null || a.getEstado().equalsIgnoreCase(estado))
-                .sorted((a1, a2) -> a2.getFechaEmision().compareTo(a1.getFechaEmision())) // Ordenamiento descendente (Escenario 1)
-                .collect(java.util.stream.Collectors.toList());
+        return alertCommunityService.getAlertsHistory(email, tipoIncidente, estado, fechaInicio, fechaFin);
     }
 
-    // HU18 - Escenario 2: Ver el detalle de una alerta específica
+    // HU18 - Escenario 2: Ver el detalle de una alerta especifica
     @Transactional(readOnly = true)
     public com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO getAlertDetail(String email, Integer idAlerta) {
-        usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        log.info("HU18 - Abriendo detalle de la alerta id: {} para el usuario: {}", idAlerta, email);
-
-        // Buscamos o simulamos la alerta exacta
-        if (idAlerta.equals(101)) {
-            return com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                    .idAlerta(101)
-                    .tipoIncidente("Robo")
-                    .descripcion("Reporte detallado: Asalto en manada registrado en las inmediaciones de la Av. Universitaria. Unidades de serenazgo en camino. Evitar la zona peatonal.")
-                    .nivelRiesgo("ALTO")
-                    .fechaEmision(LocalDateTime.now().minusMinutes(15))
-                    .estado("LEIDA") // Al abrir el detalle cambia su estado
-                    .zonaAfectada("Santiago de Surco")
-                    .build();
-        }
-
-        throw new ResourceNotFoundException("No se encontró la alerta solicitada con el id: " + idAlerta);
+        return alertCommunityService.getAlertDetail(email, idAlerta);
     }
 
     // HU19 - Registro ciudadano de incidentes utilizando el DTO de salida de la HU18
     @Transactional
     public com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO registerIncidentReport(
             String email, com.upc.grupo3.dtos.privacy.AlertHistoryRequestDTO request) {
-
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
-
-        log.info("Registrando nuevo reporte ciudadano de incidente tipo [{}] enviado por: {}",
-                request.getTipoIncidente(), email);
-
-        // Simulamos el guardado asignando un ID único
-        Integer nuevoId = (int) (Math.random() * 10000) + 500;
-
-        // Escenario: Reporte enviado a moderación (Forzamos el estado "PENDIENTE")
-        String estadoInicial = "PENDIENTE";
-
-        // Reutilizamos el DTO de la HU18 para la respuesta
-        return com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(nuevoId)
-                .tipoIncidente(request.getTipoIncidente().trim())
-                .zonaAfectada(request.getUbicacion().trim())
-                .descripcion(request.getDescripcion().trim())
-                .estado(estadoInicial)
-                .fechaEmision(LocalDateTime.now())
-                .message("Reporte de incidente enviado correctamente. Queda pendiente de revisión administrativa.") // Escenario 1
-                .build();
+        return alertCommunityService.registerIncidentReport(email, request);
     }
 
-    // HU20 - Verificación comunitaria de incidentes con bloqueo de duplicados
+    // HU20 - Verificacion comunitaria de incidentes con bloqueo de duplicados
     @Transactional
     public com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO verifyCommunityIncident(
             String email, com.upc.grupo3.dtos.privacy.CommunityVoteRequestDTO request) {
-
-        usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        log.info("Procesando verificación comunitaria de incidente ID [{}] por el usuario: {}",
-                request.getIdIncidente(), email);
-
-        // Escenario 3: Bloqueo de voto duplicado (Simulación lógica para pruebas)
-        // Si el usuario intenta votar sobre el incidente de prueba ID 101, simulamos que ya lo hizo
-        if (request.getIdIncidente().equals(101) && email != null && email.contains("duplicado")) {
-            throw new com.upc.grupo3.exceptions.EmailAlreadyRegisteredException(
-                    "Ya registraste una verificación para ese reporte. No se permiten votos duplicados.");
-        }
-
-        // Escenario 1 y 2: Recalcular nivel de confianza y actualizar
-        String nuevoNivelRiesgo = request.getVerificado() ? "ALTO (CONFIRMADO POR COMUNIDAD)" : "BAJO (RECHAZADO/FALSO)";
-        String mensajeResultado = request.getVerificado()
-                ? "Voto registrado. El nivel de confianza del reporte ha aumentado con éxito."
-                : "Voto registrado. El nivel de confianza del reporte ha sido recalculado a la baja.";
-
-        return com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(request.getIdIncidente())
-                .tipoIncidente("Reporte Ciudadano")
-                .descripcion("Verificación procesada dinámicamente por la comunidad.")
-                .nivelRiesgo(nuevoNivelRiesgo) // Actualización del motor de confiabilidad
-                .fechaEmision(LocalDateTime.now())
-                .estado("LEIDA")
-                .zonaAfectada("Zona de origen")
-                .message(mensajeResultado)
-                .build();
+        return alertCommunityService.verifyCommunityIncident(email, request);
     }
 
     // HU21 - Escenario 1: Listado de reportes exclusivamente PENDIENTES para el panel
     @Transactional(readOnly = true)
     public java.util.List<com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO> getPendingReportsForModeration(String email) {
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        log.info("Administrador [{}] accediendo al panel de moderación.", email);
-
-        java.util.List<com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO> pendientes = new java.util.ArrayList<>();
-
-        // Simulamos incidentes que nacieron en estado PENDIENTE (HU19)
-        pendientes.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(501)
-                .tipoIncidente("Robo")
-                .descripcion("Reporte ciudadano: Asalto en paradero informal.")
-                .nivelRiesgo("ALTO")
-                .fechaEmision(LocalDateTime.now().minusMinutes(30))
-                .estado("PENDIENTE")
-                .zonaAfectada("Santiago de Surco")
-                .build());
-
-        pendientes.add(com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(502)
-                .tipoIncidente("Sospechoso")
-                .descripcion("Vehículo sin placas rondando de forma reiterada.")
-                .nivelRiesgo("MEDIO")
-                .fechaEmision(LocalDateTime.now().minusHours(1))
-                .estado("PENDIENTE")
-                .zonaAfectada("Chorrillos")
-                .build());
-
-        return pendientes;
+        return alertCommunityService.getPendingReportsForModeration(email);
     }
 
-    // HU21 - Escenario 2 y 3: Procesar la aprobación o rechazo definitivo
+    // HU21 - Escenario 2 y 3: Procesar la aprobacion o rechazo definitivo
     @Transactional
     public com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO moderateIncident(
             String email, com.upc.grupo3.dtos.privacy.ModerationRequestDTO request) {
-
-        usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        String estadoFormateado = request.getNuevoEstado().trim().toUpperCase();
-        log.info("Procesando moderación del incidente [{}] hacia el estado: {} por admin: {}",
-                request.getIdIncidente(), estadoFormateado, email);
-
-        String mensajeResultado;
-        if ("APROBADO".equals(estadoFormateado)) {
-            mensajeResultado = "Reporte aprobado con éxito. El incidente ahora es visible en el mapa activo de SafeRoute.";
-        } else {
-            mensajeResultado = "Reporte rechazado/marcado como falso. El incidente ha sido archivado y no afectará al mapa.";
-        }
-
-        return com.upc.grupo3.dtos.privacy.AlertHistoryResponseDTO.builder()
-                .idAlerta(request.getIdIncidente())
-                .tipoIncidente("Reporte Moderado")
-                .descripcion("Incidente procesado por el módulo de control administrativo.")
-                .nivelRiesgo("ACTUALIZADO")
-                .fechaEmision(LocalDateTime.now())
-                .estado(estadoFormateado) // "APROBADO", "RECHAZADO" o "FALSO"
-                .zonaAfectada("Módulo de Administración")
-                .message(mensajeResultado)
-                .build();
+        return alertCommunityService.moderateIncident(email, request);
     }
 
     // HU22 - Escenario 1: Consultar perfil de infractor y cantidad de reportes falsos

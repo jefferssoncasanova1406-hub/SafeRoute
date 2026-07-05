@@ -1,0 +1,90 @@
+<section class="page incident-report-page">
+  <header class="app-page-header">
+    <div>
+      <h1>Reportar incidente</h1>
+      <p>Registra un reporte ciudadano para que pueda ser revisado y verificado.</p>
+    </div>
+    <a class="button button--secondary" routerLink="/app/alertas/historial">Ver historial</a>
+  </header>
+
+  <article class="panel report-panel">
+    <div class="panel__header">
+      <span class="panel__kicker">Comunidad</span>
+      <h2 class="panel__title">Nuevo reporte</h2>
+      <p class="panel__copy">Describe el incidente con ubicación aproximada y detalles verificables.</p>
+    </div>
+    <div class="panel__body">
+      <form class="form-grid" [formGroup]="reportForm" (ngSubmit)="submit()" novalidate>
+        <div class="field-grid field-grid--2">
+          <div class="field">
+            <label for="report-type">Tipo de incidente</label>
+            <input
+              id="report-type"
+              class="control"
+              type="text"
+              formControlName="tipoIncidente"
+              autocomplete="off"
+              placeholder="Ej. Robo"
+            />
+            @if (hasError('tipoIncidente')) {
+              <p class="field-error" role="alert">Ingresa un tipo de incidente válido.</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="report-location">Ubicación</label>
+            <input
+              id="report-location"
+              class="control"
+              type="text"
+              formControlName="ubicacion"
+              autocomplete="street-address"
+              placeholder="Ej. Av. Arequipa con Javier Prado"
+            />
+            @if (hasError('ubicacion')) {
+              <p class="field-error" role="alert">Ingresa una ubicación aproximada.</p>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="report-description">Descripción</label>
+          <textarea
+            id="report-description"
+            class="control"
+            formControlName="descripcion"
+            maxlength="500"
+            placeholder="Describe lo ocurrido con suficiente contexto."
+          ></textarea>
+          <span class="field__hint">{{ descriptionLength() }} de 500 caracteres</span>
+          @if (hasError('descripcion')) {
+            <p class="field-error" role="alert">
+              La descripción es obligatoria y debe tener entre 10 y 500 caracteres.
+            </p>
+          }
+        </div>
+
+        @if (reportSuccess(); as message) {
+          <div class="notice notice--success" role="status">
+            <strong>Reporte registrado</strong>
+            <p>{{ message }}</p>
+            <a class="button button--secondary" routerLink="/app/alertas/historial">Ir al historial</a>
+          </div>
+        }
+
+        @if (reportError(); as message) {
+          <div class="notice notice--error" role="alert">
+            <strong>No se pudo registrar el reporte</strong>
+            <p>{{ message }}</p>
+          </div>
+        }
+
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Enviando...' : 'Enviar reporte' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </article>
+</section>
