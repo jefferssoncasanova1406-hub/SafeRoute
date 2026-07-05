@@ -45,6 +45,11 @@ interface RouteMetric {
   value: string;
 }
 
+interface RouteComparison {
+  route: RouteOption;
+  index: number;
+  labels: string[];
+}
 
 interface SafeComparisonCard {
   label: string;
@@ -180,12 +185,37 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return [
       { label: 'Duración', value: this.formatDuration(route.durationMinutes) },
       { label: 'Distancia', value: this.formatDistance(route.distanceKm) },
+      { label: 'Seguridad', value: this.routeRiskLabel(route) },
       { label: 'Pasos', value: `${route.steps.length}` },
     ];
   });
 
   protected readonly selectedRouteSteps = computed(() => this.selectedRoute()?.steps ?? []);
 
+  protected readonly routeComparisons = computed<RouteComparison[]>(() => {
+    const routes = this.routeOptions();
+    const fastestDuration = this.minimumDuration(routes);
+    const safestRisk = this.minimumRiskScore(routes);
+    const recommendedRouteId = this.recommendedRouteId(routes);
+
+    return routes.map((route, index) => {
+      const labels: string[] = [];
+
+      if (fastestDuration !== null && route.durationMinutes === fastestDuration) {
+        labels.push('MÃ¡s rÃ¡pida');
+      }
+
+      if (safestRisk !== null && route.scoreRiesgo === safestRisk) {
+        labels.push('MÃ¡s segura');
+      }
+
+      if (route.routeId === recommendedRouteId || route.recomendada === true) {
+        labels.push('Recomendada');
+      }
+
+      return { route, index, labels };
+    });
+  });
 
   protected readonly safeComparisonCards = computed<SafeComparisonCard[]>(() => {
     const safeResult = this.safeRouteResult();
@@ -422,6 +452,9 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return `${(distanceMeters / 1000).toFixed(1)} km`;
   }
 
+  protected routeRiskLabel(route: RouteOption): string {
+    return this.normalizeRiskLabel(route.nivelRiesgo);
+  }
 
   protected safeRiskLabel(option: SafeRouteOption): string {
     return this.normalizeRiskLabel(option.nivelRiesgo);
@@ -525,6 +558,26 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       });
   }
 
+
+  private minimumDuration(routes: RouteOption[]): number | null {
+    const durations = routes
+      .map((route) => route.durationMinutes)
+      .filter((duration) => typeof duration === 'number' && !Number.isNaN(duration));
+
+    return durations.length ? Math.min(...durations) : null;
+  }
+
+  private minimumRiskScore(routes: RouteOption[]): number | null {
+    const scores = routes
+      .map((route) => route.scoreRiesgo)
+      .filter((score): score is number => typeof score === 'number' && !Number.isNaN(score));
+
+    return scores.length ? Math.min(...scores) : null;
+  }
+
+  private recommendedRouteId(routes: RouteOption[]): string | null {
+    return routes.find((route) => route.recomendada === true)?.routeId ?? routes[0]?.routeId ?? null;
+  }
 
   private hasValidCoordinate(latitude: number, longitude: number): boolean {
     return (

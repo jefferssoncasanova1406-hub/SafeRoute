@@ -168,6 +168,7 @@
   background: var(--surface);
 }
 
+.label-row,
 .safe-comparison-grid,
 .comparison-grid {
   display: grid;
@@ -188,6 +189,7 @@
 }
 
 .comparison-grid small,
+.route-option-card__note,
 .safe-comparison-card p {
   color: var(--ink-muted);
   font-size: 0.86rem;
@@ -289,4 +291,3 @@
 .route-option-card:focus-visible { box-shadow: var(--shadow-sm); }
 .route-option-card--active { background: var(--brand-soft); border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
 @media (max-width: 1200px) { .route-layout { grid-template-columns: 1fr; } .route-layout > .panel:first-child { position: static; } }
-

@@ -162,6 +162,59 @@
               </div>
             }
 
+            <div class="route-options-grid">
+              @for (comparison of routeComparisons(); track comparison.route.routeId) {
+                <button
+                  class="route-option-card"
+                  [class.route-option-card--active]="isRouteSelected(comparison.route.routeId)"
+                  type="button"
+                  [attr.aria-pressed]="isRouteSelected(comparison.route.routeId)"
+                  (click)="selectRoute(comparison.route.routeId)"
+                >
+                  <div class="route-option-card__top">
+                    <div>
+                      <span class="subtle-label">Ruta {{ comparison.index + 1 }}</span>
+                      <h4>{{ comparison.route.summary }}</h4>
+                    </div>
+                    <span class="badge badge--accent">
+                      {{ formatDuration(comparison.route.durationMinutes) }}
+                    </span>
+                  </div>
+
+                  @if (comparison.labels.length > 0) {
+                    <div class="label-row" aria-label="Etiquetas de comparaciÃ³n">
+                      @for (label of comparison.labels; track label) {
+                        <span class="badge badge--brand">{{ label }}</span>
+                      }
+                    </div>
+                  }
+
+                  <div class="comparison-grid">
+                    <span>
+                      <small>Distancia</small>
+                      <strong>{{ formatDistance(comparison.route.distanceKm) }}</strong>
+                    </span>
+                    <span>
+                      <small>Tiempo</small>
+                      <strong>{{ formatDuration(comparison.route.durationMinutes) }}</strong>
+                    </span>
+                    <span>
+                      <small>Riesgo</small>
+                      <strong>{{ routeRiskLabel(comparison.route) }}</strong>
+                    </span>
+                    <span>
+                      <small>Score</small>
+                      <strong>{{ riskScoreLabel(comparison.route.scoreRiesgo) }}</strong>
+                    </span>
+                  </div>
+
+                  <p class="route-option-card__note">
+                    {{ crossedZonesLabel(comparison.route.cruzaZonasRiesgo, comparison.route.zonasRiesgo) }}
+                  </p>
+                </button>
+              }
+            </div>
+
             @if (safeComparisonCards().length > 0) {
               <div class="safe-comparison-grid" aria-label="EvaluaciÃ³n segura del backend">
                 @for (card of safeComparisonCards(); track card.label) {
@@ -224,7 +277,6 @@
               }
             </div>
           </section>
-
 
           <section class="panel panel--soft route-steps-panel">
             <div class="panel__header">

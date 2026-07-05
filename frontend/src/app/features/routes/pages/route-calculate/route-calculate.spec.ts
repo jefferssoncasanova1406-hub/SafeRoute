@@ -92,6 +92,44 @@ describe('RouteCalculatePage', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Avanza por Javier Prado');
   });
 
+  it('compara distancia, tiempo, seguridad y etiquetas', () => {
+    submitForm(fixture.nativeElement as HTMLElement);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('ComparaciÃ³n de alternativas');
+    expect(text).toContain('MÃ¡s rÃ¡pida');
+    expect(text).toContain('MÃ¡s segura');
+    expect(text).toContain('Recomendada');
+    expect(text).toContain('Riesgo bajo');
+    expect(text).toContain('Score 10');
+    expect(text).toContain('Cruza 1 zona(s) de riesgo');
+  });
+
+  it('selecciona una alternativa y actualiza metricas e instrucciones', () => {
+    submitForm(fixture.nativeElement as HTMLElement);
+    fixture.detectChanges();
+
+    const secondRoute = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+      '.route-option-card',
+    )[1];
+    secondRoute.click();
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Ruta segura');
+    expect(text).toContain('10.2 km');
+    expect(text).toContain('24 min');
+    expect(text).toContain('Continua por zona iluminada');
+  });
+
+  it('tolera datos de seguridad faltantes', () => {
+    routeService.evaluateRoute = vi.fn(() => of(ROUTE_RESPONSE_WITHOUT_RISK));
+    submitForm(fixture.nativeElement as HTMLElement);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin datos de riesgo');
+  });
 
   it('mantiene rutas cuando falla solo la seguridad', () => {
     routeService.safeResponse = throwError(() => new HttpErrorResponse({ status: 500 }));
@@ -184,6 +222,16 @@ const ROUTE_RESPONSE: RouteResponse = {
   ],
 };
 
+const ROUTE_RESPONSE_WITHOUT_RISK: RouteResponse = {
+  ...ROUTE_RESPONSE,
+  routes: ROUTE_RESPONSE.routes.map((route) => ({
+    ...route,
+    nivelRiesgo: null,
+    scoreRiesgo: null,
+    cruzaZonasRiesgo: null,
+    zonasRiesgo: null,
+  })),
+};
 
 const SAFE_RESPONSE: SafeRouteResponse = {
   origen: { latitud: -12.08, longitud: -77.04 },
