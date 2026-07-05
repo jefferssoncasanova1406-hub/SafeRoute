@@ -34,6 +34,13 @@ export const routes: Routes = [
             (module) => module.ResetPasswordPage,
           ),
       },
+      {
+        path: 'seguimiento/:token',
+        loadComponent: () =>
+          import('./features/tracking/pages/public-tracking/public-tracking').then(
+            (module) => module.PublicTrackingPage,
+          ),
+      },
     ],
   },
   {

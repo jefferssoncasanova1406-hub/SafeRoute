@@ -1,0 +1,90 @@
+<section class="public-tracking-page">
+  <header class="public-tracking-hero">
+    <div>
+      <span class="subtle-label">Seguimiento SafeRoute</span>
+      <h1>Ãšltima ubicaciÃ³n disponible</h1>
+      <p>Consulta el estado pÃºblico compartido por el usuario.</p>
+    </div>
+    <a class="button button--ghost" routerLink="/inicio">Volver al inicio</a>
+  </header>
+
+  <section class="public-tracking-layout">
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Estado</span>
+        <h2 class="panel__title">Seguimiento pÃºblico</h2>
+      </div>
+
+      <div class="panel__body public-tracking-details">
+        @if (isLoading()) {
+          <div class="notice" role="status">
+            <p>Cargando seguimiento...</p>
+          </div>
+        }
+
+        @if (errorMessage(); as error) {
+          <div class="notice notice--error" role="alert">
+            <strong>No se pudo consultar el seguimiento.</strong>
+            <p>{{ error }}</p>
+          </div>
+        }
+
+        @if (tracking(); as item) {
+          <div class="tracking-public-card">
+            <div>
+              <span class="subtle-label">Nombre visible</span>
+              <strong>{{ item.nombreUsuario || 'No informado' }}</strong>
+            </div>
+            <div>
+              <span class="subtle-label">Estado</span>
+              <strong>{{ statusLabel() }}</strong>
+            </div>
+            <div>
+              <span class="subtle-label">Ãšltima actualizaciÃ³n</span>
+              <strong>{{ item.ultimaActualizacion || 'No informada' }}</strong>
+            </div>
+            <div>
+              <span class="subtle-label">UbicaciÃ³n</span>
+              <strong>Ãšltima ubicaciÃ³n disponible</strong>
+            </div>
+            <div>
+              <span class="subtle-label">Latitud</span>
+              <strong>{{ coordinateLabel(item.latitudActual) }}</strong>
+            </div>
+            <div>
+              <span class="subtle-label">Longitud</span>
+              <strong>{{ coordinateLabel(item.longitudActual) }}</strong>
+            </div>
+          </div>
+        }
+
+        <button class="button" type="button" [disabled]="isLoading() || !token()" (click)="loadTracking()">
+          {{ isLoading() ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel__header">
+        <span class="panel__kicker">Mapa</span>
+        <h2 class="panel__title">Coordenadas compartidas</h2>
+        @if (mapNotice(); as notice) {
+          <p class="panel__copy">{{ notice }}</p>
+        }
+      </div>
+
+      <div class="panel__body">
+        <div class="public-map-shell">
+          <div #mapContainer class="public-map" aria-label="Mapa de la ubicaciÃ³n compartida"></div>
+        </div>
+
+        @if (tracking() && !hasCoordinates()) {
+          <div class="empty-state">
+            <h3>Sin coordenadas vÃ¡lidas</h3>
+            <p>El seguimiento no incluyÃ³ latitud y longitud vÃ¡lidas para mostrar marcador.</p>
+          </div>
+        }
+      </div>
+    </article>
+  </section>
+</section>

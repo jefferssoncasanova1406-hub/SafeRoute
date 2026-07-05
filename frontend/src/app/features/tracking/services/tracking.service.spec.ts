@@ -56,4 +56,21 @@ describe('TrackingService', () => {
 
     expect(response).toBe('Revocado');
   });
+
+  it('consulta seguimiento publico sin Authorization', () => {
+    service.getPublicTracking('abc12345').subscribe();
+
+    const request = httpMock.expectOne(
+      'http://localhost:8080/api/tracking/public/consultar/abc12345',
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.has('Authorization')).toBe(false);
+    request.flush({
+      nombreUsuario: 'Franco',
+      latitudActual: -12.1,
+      longitudActual: -77.02,
+      ultimaActualizacion: 'Hace unos instantes',
+      estadoRuta: 'EN_CAMINO',
+    });
+  });
 });

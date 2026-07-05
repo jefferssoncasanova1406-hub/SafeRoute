@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { appRuntimeConfig } from '../../../core/config/runtime-config';
-import { ShareTrackingResponse } from '../models/tracking.model';
+import { PublicTrackingResponse, ShareTrackingResponse } from '../models/tracking.model';
 
 @Injectable({
   providedIn: 'root',
@@ -25,5 +25,11 @@ export class TrackingService {
       headers: this.authService.buildAuthorizedHeaders(),
       responseType: 'text',
     });
+  }
+
+  getPublicTracking(token: string): Observable<PublicTrackingResponse> {
+    return this.http.get<PublicTrackingResponse>(
+      `${this.baseUrl}/public/consultar/${encodeURIComponent(token)}`,
+    );
   }
 }
