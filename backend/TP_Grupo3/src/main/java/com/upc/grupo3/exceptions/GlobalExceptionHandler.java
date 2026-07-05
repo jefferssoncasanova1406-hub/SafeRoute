@@ -153,6 +153,45 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    @ExceptionHandler(InvalidCommunityAlertRequestException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidCommunityAlertRequestException(
+            InvalidCommunityAlertRequestException exception,
+            HttpServletRequest request) {
+        log.warn("Solicitud de alertas comunitarias invalida path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(DuplicateCommunityVoteException.class)
+    public ResponseEntity<ApiErrorDTO> handleDuplicateCommunityVoteException(
+            DuplicateCommunityVoteException exception,
+            HttpServletRequest request) {
+        log.warn("Voto comunitario duplicado path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(IncidentAlreadyModeratedException.class)
+    public ResponseEntity<ApiErrorDTO> handleIncidentAlreadyModeratedException(
+            IncidentAlreadyModeratedException exception,
+            HttpServletRequest request) {
+        log.warn("Moderacion rechazada para reporte ya procesado path={} message={}",
+                request.getRequestURI(), exception.getMessage());
+        ApiErrorDTO error = buildError(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(UnauthenticatedUserException.class)
     public ResponseEntity<ApiErrorDTO> handleUnauthenticatedUserException(
             UnauthenticatedUserException exception,
