@@ -16,6 +16,7 @@ import { RouterLink } from '@angular/router';
 import mapboxgl from 'mapbox-gl';
 import { finalize } from 'rxjs';
 
+import { selectedMapStyle } from '../../../../shared/utils/map-style';
 import { appRuntimeConfig } from '../../../../core/config/runtime-config';
 import { RouteService } from '../../../../core/services/route.service';
 import { PrivacyService } from '../../../privacy/services/privacy.service';
@@ -59,9 +60,17 @@ interface SafeComparisonCard {
   option: SafeRouteOption;
 }
 
+interface RouteLegendItem {
+  label: string;
+  className: string;
+}
+
 interface RouteFeatureProperties {
   routeId: string;
   summary: string;
+  riskLabel: string;
+  color: string;
+  selected: boolean;
 }
 
 interface RouteLineFeatureCollection {
@@ -82,29 +91,6 @@ const DEFAULT_CENTER: [number, number] = [-77.0428, -12.0464];
 const EMPTY_ROUTE_DATA: RouteLineFeatureCollection = {
   type: 'FeatureCollection',
   features: [],
-};
-
-const OSM_STYLE: mapboxgl.StyleSpecification = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: [
-        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-    },
-  },
-  layers: [
-    {
-      id: 'osm',
-      type: 'raster',
-      source: 'osm',
-    },
-  ],
 };
 
 const DEMO_ROUTE: Pick<RouteRequest, 'origin' | 'destination' | 'transportMode'> = {
@@ -132,6 +118,8 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   private map: mapboxgl.Map | null = null;
   private originMarker: mapboxgl.Marker | null = null;
   private destinationMarker: mapboxgl.Marker | null = null;
+  private geolocationWatchId: number | null = null;
+  private mapResizeObserver: ResizeObserver | null = null;
 
   protected readonly isSubmitting = signal(false);
   protected readonly isSecurityLoading = signal(false);
@@ -148,11 +136,17 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   protected readonly selectedRouteId = signal<string | null>(null);
   protected readonly mapReady = signal(false);
 
+  protected readonly routeLegend: RouteLegendItem[] = [
+    { label: 'Riesgo bajo', className: 'badge--low' },
+    { label: 'Riesgo medio', className: 'badge--medium' },
+    { label: 'Riesgo alto', className: 'badge--high' },
+  ];
+
   protected readonly transportOptions: TransportOption[] = [
     {
       value: 'driving',
       label: 'Auto',
-      note: 'Vías principales y tiempos de tráfico de ruta.',
+      note: 'Vias principales y tiempos de trafico de ruta.',
     },
     {
       value: 'walking',
@@ -162,7 +156,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     {
       value: 'cycling',
       label: 'Bicicleta',
-      note: 'Alternativas más cómodas para pedaleo.',
+      note: 'Alternativas mas comodas para pedaleo.',
     },
   ];
 
@@ -215,7 +209,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     }
 
     return [
-      { label: 'Duración', value: this.formatDuration(route.durationMinutes) },
+      { label: 'Duracion', value: this.formatDuration(route.durationMinutes) },
       { label: 'Distancia', value: this.formatDistance(route.distanceKm) },
       { label: 'Seguridad', value: this.routeRiskLabel(route) },
       { label: 'Pasos', value: `${route.steps.length}` },
@@ -234,11 +228,11 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       const labels: string[] = [];
 
       if (fastestDuration !== null && route.durationMinutes === fastestDuration) {
-        labels.push('MÃ¡s rÃ¡pida');
+        labels.push('Mas rapida');
       }
 
       if (safestRisk !== null && route.scoreRiesgo === safestRisk) {
-        labels.push('MÃ¡s segura');
+        labels.push('Mas segura');
       }
 
       if (route.routeId === recommendedRouteId || route.recomendada === true) {
@@ -259,11 +253,11 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     const cards: SafeComparisonCard[] = [];
 
     if (safeResult.rutaMasRapida) {
-      cards.push({ label: 'MÃ¡s rÃ¡pida', option: safeResult.rutaMasRapida });
+      cards.push({ label: 'Mas rapida', option: safeResult.rutaMasRapida });
     }
 
     if (safeResult.rutaMasSegura) {
-      cards.push({ label: 'MÃ¡s segura', option: safeResult.rutaMasSegura });
+      cards.push({ label: 'Mas segura', option: safeResult.rutaMasSegura });
     }
 
     if (safeResult.rutaRecomendada) {
@@ -285,21 +279,26 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
   constructor() {
     this.loadDemoRoute();
 
-    effect(() => {
+        effect(() => {
       const result = this.routeResult();
-      const selectedRoute = this.selectedRoute();
+      const selectedRouteId = this.selectedRouteId();
       const mapReady = this.mapReady();
 
       if (!mapReady || !this.map) {
         return;
       }
 
-      if (!result || !selectedRoute) {
-        this.clearRenderedRoute();
+      if (!result || result.routes.length === 0) {
+        this.clearRenderedRoutes();
         return;
       }
 
-      this.renderRoute(selectedRoute, result.originResolved, result.destinationResolved);
+      this.renderRoutes(
+        result.routes,
+        selectedRouteId,
+        result.originResolved,
+        result.destinationResolved,
+      );
     });
   }
 
@@ -311,7 +310,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     this.map = new mapboxgl.Map({
       accessToken: appRuntimeConfig.mapboxPublicToken,
       container: this.mapContainer.nativeElement,
-      style: OSM_STYLE,
+      style: selectedMapStyle(appRuntimeConfig.mapboxPublicToken),
       center: DEFAULT_CENTER,
       zoom: 11.8,
       attributionControl: true,
@@ -323,37 +322,25 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       console.error('Mapbox render error', event.error);
     });
 
-    this.map.on('load', () => {
-      if (!this.map || this.map.getSource(ROUTE_SOURCE_ID)) {
-        this.mapReady.set(true);
-        return;
-      }
-
-      this.map.addSource(ROUTE_SOURCE_ID, {
-        type: 'geojson',
-        data: EMPTY_ROUTE_DATA,
-      });
-
-      this.map.addLayer({
-        id: ROUTE_LAYER_ID,
-        type: 'line',
-        source: ROUTE_SOURCE_ID,
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-        },
-        paint: {
-          'line-color': '#0f6c78',
-          'line-width': 6,
-          'line-opacity': 0.9,
-        },
-      });
-
+        this.map.on('load', () => {
+      this.ensureRouteLayer();
       this.mapReady.set(true);
+      this.syncRenderedRoutes();
+      this.resizeMap();
     });
+
+    this.map.on('style.load', () => {
+      this.ensureRouteLayer();
+      this.syncRenderedRoutes();
+      this.resizeMap();
+    });
+
+    this.attachMapResizeObserver();
   }
 
   ngOnDestroy(): void {
+    this.stopLocationUpdates();
+    this.mapResizeObserver?.disconnect();
     this.originMarker?.remove();
     this.destinationMarker?.remove();
     this.map?.remove();
@@ -402,12 +389,16 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       .subscribe({
         next: (response) => {
           if (!response.routes?.length) {
-            this.requestError.set('El backend respondió sin rutas disponibles para ese trayecto.');
+            this.requestError.set('El backend respondio sin rutas disponibles para ese trayecto.');
             return;
           }
 
           this.routeResult.set(response);
-          this.selectedRouteId.set(response.routes[0]?.routeId ?? null);
+          this.selectedRouteId.set(
+            response.routes.find((route) => route.recomendada === true)?.routeId ??
+              response.routes[0]?.routeId ??
+              null,
+          );
           this.loadSafeRouteComparison(response);
         },
         error: (error: HttpErrorResponse) => {
@@ -436,7 +427,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
         if (!preferences.realTimeLocationEnabled || !preferences.personalDataSharingEnabled) {
           this.isSharing.set(false);
           this.shareError.set(
-            'Activa la ubicaciÃ³n en tiempo real y el uso compartido de datos en Privacidad antes de compartir el seguimiento.',
+            'Activa la ubicacion en tiempo real y el uso compartido de datos en Privacidad antes de compartir el seguimiento.',
           );
           return;
         }
@@ -446,7 +437,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       error: (error: HttpErrorResponse) => {
         this.isSharing.set(false);
         this.shareError.set(
-          this.parseError(error, 'No fue posible validar tu configuraciÃ³n de privacidad.'),
+          this.parseError(error, 'No fue posible validar tu configuracion de privacidad.'),
         );
       },
     });
@@ -460,7 +451,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     }
 
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
-      this.shareError.set('Tu navegador no permite copiar el enlace automÃ¡ticamente.');
+      this.shareError.set('Tu navegador no permite copiar el enlace automaticamente.');
       return;
     }
 
@@ -471,7 +462,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
         this.shareMessage.set('Enlace copiado al portapapeles.');
       })
       .catch(() => {
-        this.shareError.set('No fue posible copiar el enlace. SelecciÃ³nalo manualmente.');
+        this.shareError.set('No fue posible copiar el enlace. Seleccionalo manualmente.');
       });
   }
 
@@ -490,7 +481,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     navigator
       .share({
         title: 'Seguimiento SafeRoute',
-        text: 'Sigue mi Ãºltima ubicaciÃ³n disponible en SafeRoute.',
+        text: 'Sigue mi ultima ubicacion disponible en SafeRoute.',
         url: link,
       })
       .then(() => {
@@ -498,7 +489,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
         this.shareMessage.set('Enlace enviado para compartir.');
       })
       .catch(() => {
-        this.shareError.set('No se completÃ³ la acciÃ³n de compartir.');
+        this.shareError.set('No se completo la accion de compartir.');
       });
   }
 
@@ -518,6 +509,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => this.isStoppingShare.set(false)))
       .subscribe({
         next: (message) => {
+          this.stopLocationUpdates();
           this.trackingRevoked.set(true);
           this.shareMessage.set(message || 'Seguimiento detenido.');
         },
@@ -542,7 +534,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     }
 
     if (control.hasError('maxlength')) {
-      return 'Máximo 200 caracteres.';
+      return 'Maximo 200 caracteres.';
     }
 
     return 'Revisa este campo.';
@@ -596,8 +588,28 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return `${(distanceMeters / 1000).toFixed(1)} km`;
   }
 
-  protected routeRiskLabel(route: RouteOption): string {
+    protected routeRiskLabel(route: RouteOption): string {
     return this.normalizeRiskLabel(route.nivelRiesgo);
+  }
+
+  protected routeRiskBadgeClass(
+    route: Pick<RouteOption, 'nivelRiesgo'> | Pick<SafeRouteOption, 'nivelRiesgo'> | null | undefined,
+  ): string {
+    const normalized = route?.nivelRiesgo?.trim().toLowerCase() ?? '';
+
+    if (normalized.includes('alto')) {
+      return 'badge--high';
+    }
+
+    if (normalized.includes('medio') || normalized.includes('moderado')) {
+      return 'badge--medium';
+    }
+
+    if (normalized.includes('bajo')) {
+      return 'badge--low';
+    }
+
+    return 'badge--brand';
   }
 
   protected safeRiskLabel(option: SafeRouteOption): string {
@@ -631,7 +643,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     const value = this.activeTracking()?.fechaExpiracionEstimada;
 
     if (!value) {
-      return 'Sin expiraciÃ³n informada';
+      return 'Sin expiracion informada';
     }
 
     return value;
@@ -682,12 +694,12 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     const destination = response.destinationResolved;
 
     if (!this.hasValidCoordinate(origin.latitude, origin.longitude)) {
-      this.securityWarning.set('No se pudo evaluar seguridad porque el origen no tiene coordenadas vÃ¡lidas.');
+      this.securityWarning.set('No se pudo evaluar seguridad porque el origen no tiene coordenadas validas.');
       return;
     }
 
     if (!this.hasValidCoordinate(destination.latitude, destination.longitude)) {
-      this.securityWarning.set('No se pudo evaluar seguridad porque el destino no tiene coordenadas vÃ¡lidas.');
+      this.securityWarning.set('No se pudo evaluar seguridad porque el destino no tiene coordenadas validas.');
       return;
     }
 
@@ -713,7 +725,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
         error: (error: HttpErrorResponse) => {
           this.safeRouteResult.set(null);
           this.securityWarning.set(
-            this.parseError(error, 'No fue posible cargar la evaluaciÃ³n de seguridad.'),
+            this.parseError(error, 'No fue posible cargar la evaluacion de seguridad.'),
           );
         },
       });
@@ -727,14 +739,39 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
         next: (response) => {
           this.activeTracking.set(response);
           this.trackingRevoked.set(false);
+          this.startLocationUpdates(response.tokenSeguimiento);
           this.shareMessage.set('Seguimiento activo. Ya puedes copiar o compartir el enlace.');
         },
         error: (error: HttpErrorResponse) => {
           this.shareError.set(
-            this.parseError(error, 'No fue posible compartir la ubicaciÃ³n.'),
+            this.parseError(error, 'No fue posible compartir la ubicacion.'),
           );
         },
       });
+  }
+
+  private startLocationUpdates(token: string): void {
+    this.stopLocationUpdates();
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      this.shareError.set('El navegador no permite actualizar la ubicacion en tiempo real.');
+      return;
+    }
+    this.geolocationWatchId = navigator.geolocation.watchPosition(
+      position => {
+        this.trackingService
+          .updateLocation(token, position.coords.latitude, position.coords.longitude)
+          .subscribe({ error: () => this.shareError.set('No fue posible actualizar la ubicacion compartida.') });
+      },
+      () => this.shareError.set('Se perdio el permiso de ubicacion durante el seguimiento.'),
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 },
+    );
+  }
+
+  private stopLocationUpdates(): void {
+    if (this.geolocationWatchId !== null && typeof navigator !== 'undefined') {
+      navigator.geolocation.clearWatch(this.geolocationWatchId);
+      this.geolocationWatchId = null;
+    }
   }
 
   private minimumDuration(routes: RouteOption[]): number | null {
@@ -790,8 +827,25 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     return value;
   }
 
-  private renderRoute(
-    route: RouteOption,
+    private syncRenderedRoutes(): void {
+    const result = this.routeResult();
+
+    if (!result || result.routes.length === 0) {
+      this.clearRenderedRoutes();
+      return;
+    }
+
+    this.renderRoutes(
+      result.routes,
+      this.selectedRouteId(),
+      result.originResolved,
+      result.destinationResolved,
+    );
+  }
+
+  private renderRoutes(
+    routes: RouteOption[],
+    selectedRouteId: string | null,
     originResolved: ResolvedPlace,
     destinationResolved: ResolvedPlace,
   ): void {
@@ -800,7 +854,12 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     }
 
     const source = this.map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-    const routeData = this.toRouteFeatureCollection(route);
+    const routeData = this.toRouteFeatureCollection(
+      routes,
+      selectedRouteId,
+      originResolved,
+      destinationResolved,
+    );
 
     if (source) {
       source.setData(routeData as never);
@@ -825,8 +884,10 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
     const bounds = new mapboxgl.LngLatBounds();
 
-    route.geometry.coordinates.forEach((coordinate) => {
-      bounds.extend([coordinate[0], coordinate[1]]);
+    routeData.features.forEach((feature) => {
+      feature.geometry.coordinates.forEach((coordinate) => {
+        bounds.extend([coordinate[0], coordinate[1]]);
+      });
     });
 
     bounds.extend([originResolved.longitude, originResolved.latitude]);
@@ -841,7 +902,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     }
   }
 
-  private clearRenderedRoute(): void {
+  private clearRenderedRoutes(): void {
     if (!this.map) {
       return;
     }
@@ -864,23 +925,122 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
     });
   }
 
-  private toRouteFeatureCollection(route: RouteOption): RouteLineFeatureCollection {
+  private toRouteFeatureCollection(
+    routes: RouteOption[],
+    selectedRouteId: string | null,
+    originResolved: ResolvedPlace,
+    destinationResolved: ResolvedPlace,
+  ): RouteLineFeatureCollection {
+    const orderedRoutes = [...routes].sort(
+      (left, right) =>
+        Number(left.routeId === selectedRouteId) - Number(right.routeId === selectedRouteId),
+    );
+
     return {
       type: 'FeatureCollection',
-      features: [
-        {
+      features: orderedRoutes.map((route) => {
+        const coordinates = this.routeCoordinates(route, originResolved, destinationResolved);
+
+        return {
           type: 'Feature',
           properties: {
             routeId: route.routeId,
             summary: route.summary,
+            riskLabel: this.routeRiskLabel(route),
+            color: this.routeLineColor(route.nivelRiesgo),
+            selected: route.routeId === selectedRouteId,
           },
           geometry: {
             type: 'LineString',
-            coordinates: route.geometry.coordinates,
+            coordinates,
           },
-        },
-      ],
+        };
+      }),
     };
+  }
+
+  private routeCoordinates(
+    route: RouteOption,
+    originResolved: ResolvedPlace,
+    destinationResolved: ResolvedPlace,
+  ): number[][] {
+    return route.geometry.coordinates.length >= 2
+      ? route.geometry.coordinates
+      : [
+          [originResolved.longitude, originResolved.latitude],
+          [destinationResolved.longitude, destinationResolved.latitude],
+        ];
+  }
+
+  private routeLineColor(riskLevel: string | null | undefined): string {
+    const normalized = riskLevel?.trim().toLowerCase() ?? '';
+
+    if (normalized.includes('alto')) {
+      return '#dc2626';
+    }
+
+    if (normalized.includes('medio') || normalized.includes('moderado')) {
+      return '#f59e0b';
+    }
+
+    if (normalized.includes('bajo')) {
+      return '#22c55e';
+    }
+
+    return '#0f6c78';
+  }
+
+  private ensureRouteLayer(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const mapWithOptionalApis = this.map as mapboxgl.Map & {
+      getLayer?: (id: string) => unknown;
+    };
+
+    if (!this.map.getSource(ROUTE_SOURCE_ID)) {
+      this.map.addSource(ROUTE_SOURCE_ID, {
+        type: 'geojson',
+        data: EMPTY_ROUTE_DATA,
+      });
+    }
+
+    if (!mapWithOptionalApis.getLayer || !mapWithOptionalApis.getLayer(ROUTE_LAYER_ID)) {
+      this.map.addLayer({
+        id: ROUTE_LAYER_ID,
+        type: 'line',
+        source: ROUTE_SOURCE_ID,
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': ['get', 'color'] as never,
+          'line-width': ['case', ['boolean', ['get', 'selected'], false], 8, 5] as never,
+          'line-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.98, 0.62] as never,
+        },
+      });
+    }
+  }
+
+  private attachMapResizeObserver(): void {
+    if (!this.mapContainer?.nativeElement || typeof ResizeObserver === 'undefined') {
+      queueMicrotask(() => this.resizeMap());
+      return;
+    }
+
+    this.mapResizeObserver?.disconnect();
+    this.mapResizeObserver = new ResizeObserver(() => {
+      this.resizeMap();
+    });
+    this.mapResizeObserver.observe(this.mapContainer.nativeElement);
+    queueMicrotask(() => this.resizeMap());
+  }
+
+  private resizeMap(): void {
+    const mapWithResize = this.map as (mapboxgl.Map & { resize?: () => void }) | null;
+    mapWithResize?.resize?.();
   }
 
   private createMarkerElement(backgroundColor: string, label: string): HTMLDivElement {
@@ -912,7 +1072,7 @@ export class RouteCalculatePage implements AfterViewInit, OnDestroy {
 
   private parseError(error: HttpErrorResponse, fallback: string): string {
     if (error.status === 0) {
-      return `No se pudo conectar con el backend. Verifica que esté escuchando en ${appRuntimeConfig.apiBaseUrl}.`;
+      return `No se pudo conectar con el backend. Verifica que este escuchando en ${appRuntimeConfig.apiBaseUrl}.`;
     }
 
     const body = error.error as ApiErrorBody | string | null;

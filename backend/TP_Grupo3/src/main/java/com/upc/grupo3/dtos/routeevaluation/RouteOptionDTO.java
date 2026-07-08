@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class RouteOptionDTO {
 
     private String routeId;
@@ -20,4 +20,9 @@ public class RouteOptionDTO {
     private Double distanceKm;
     private GeoJsonLineStringDTO geometry;
     private List<RouteStepDTO> steps;
+    private String nivelRiesgo;
+    private Integer scoreRiesgo;
+    private Boolean cruzaZonasRiesgo;
+    private List<RouteRiskZoneDTO> zonasRiesgo;
+    private Boolean recomendada;
 }

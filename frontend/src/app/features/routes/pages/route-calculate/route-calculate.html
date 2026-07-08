@@ -3,7 +3,7 @@
     <div>
       <h1>Busca y compara tu trayecto</h1>
       <p>
-        Escribe origen y destino, elige cómo te mueves y revisa la geometría real de cada
+        Escribe origen y destino, elige como te mueves y revisa la geometria real de cada
         alternativa con instrucciones giro a giro.
       </p>
     </div>
@@ -20,9 +20,9 @@
     <article class="panel">
       <div class="panel__header">
         <span class="panel__kicker">Consulta</span>
-        <h2 class="panel__title">Configura la búsqueda</h2>
+        <h2 class="panel__title">Configura la busqueda</h2>
         <p class="panel__copy">
-          El backend resolverá las direcciones con Mapbox y devolverá alternativas reales para el
+          El backend resolvera las direcciones con Mapbox y devolvera alternativas reales para el
           modo elegido.
         </p>
       </div>
@@ -104,28 +104,45 @@
         <span class="panel__kicker">Resultado</span>
         <h2 class="panel__title">Mapa y detalles de la ruta</h2>
         <p class="panel__copy">
-          Selecciona una alternativa para ver su recorrido, distancia, duración e instrucciones.
+          Selecciona una alternativa para ver su recorrido, distancia, duracion e instrucciones.
         </p>
       </div>
 
       <div class="panel__body route-result-body">
-        <div class="route-map-shell">
+                <div class="route-map-shell">
           <div #mapContainer class="route-map" aria-label="Mapa de la ruta calculada"></div>
         </div>
 
+        <div class="route-map-legend" aria-label="Clasificacion visual por riesgo">
+          @for (item of routeLegend; track item.label) {
+            <span [class]="'tag ' + item.className">{{ item.label }}</span>
+          }
+        </div>
+
+        <p class="route-map-note">
+          El mapa superpone todas las alternativas y resalta la seleccionada con mayor grosor.
+        </p>
+
         @if (routeResult(); as result) {
           <section class="route-summary-card">
-            <div class="route-summary-card__top">
+                        <div class="route-summary-card__top">
               <div class="route-summary-card__copy">
                 <span class="subtle-label">{{ transportModeLabel() }}</span>
                 <h3>{{ selectedRoute()?.summary || 'Ruta seleccionada' }}</h3>
                 <p>
                   <strong>{{ resolvedOrigin()?.address }}</strong>
-                  <span class="route-arrow">→</span>
+                  <span class="route-arrow">&rarr;</span>
                   <strong>{{ resolvedDestination()?.address }}</strong>
                 </p>
               </div>
-              <span class="badge badge--brand">{{ result.routes.length }} alternativa(s)</span>
+              <div class="route-summary-card__badges">
+                <span class="badge badge--brand">{{ result.routes.length }} alternativa(s)</span>
+                @if (selectedRoute(); as selectedRoute) {
+                  <span [class]="'badge ' + routeRiskBadgeClass(selectedRoute)">
+                    {{ routeRiskLabel(selectedRoute) }}
+                  </span>
+                }
+              </div>
             </div>
 
             <div class="metric-grid">
@@ -140,17 +157,17 @@
 
           <section class="route-comparison-panel" aria-labelledby="route-comparison-title">
             <div class="route-options-stack__header">
-              <span class="subtle-label">ComparaciÃ³n de alternativas</span>
+              <span class="subtle-label">Comparacion de alternativas</span>
               <h3 id="route-comparison-title">Distancia, tiempo y seguridad</h3>
               <p>
-                La ruta recomendada usa la alternativa inicial que ya selecciona el flujo actual.
-                La seguridad solo se muestra cuando el backend devuelve esos datos.
+                La ruta recomendada prioriza menor riesgo y penaliza demoras excesivas.
+                La seguridad adicional solo se muestra cuando el backend devuelve esos datos.
               </p>
             </div>
 
             @if (securityWarning(); as warning) {
               <div class="notice notice--warning" role="status">
-                <strong>Seguridad no disponible para la comparaciÃ³n.</strong>
+                <strong>Seguridad no disponible para la comparacion.</strong>
                 <p>{{ warning }}</p>
               </div>
             }
@@ -182,7 +199,7 @@
                   </div>
 
                   @if (comparison.labels.length > 0) {
-                    <div class="label-row" aria-label="Etiquetas de comparaciÃ³n">
+                    <div class="label-row" aria-label="Etiquetas de comparacion">
                       @for (label of comparison.labels; track label) {
                         <span class="badge badge--brand">{{ label }}</span>
                       }
@@ -216,7 +233,7 @@
             </div>
 
             @if (safeComparisonCards().length > 0) {
-              <div class="safe-comparison-grid" aria-label="EvaluaciÃ³n segura del backend">
+              <div class="safe-comparison-grid" aria-label="Evaluacion segura del backend">
                 @for (card of safeComparisonCards(); track card.label) {
                   <article class="safe-comparison-card">
                     <span class="badge badge--brand">{{ card.label }}</span>
@@ -248,7 +265,7 @@
           <section class="route-options-stack">
             <div class="route-options-stack__header">
               <span class="subtle-label">Alternativas</span>
-              <p>Elige cuál quieres inspeccionar en el mapa y en la lista de pasos.</p>
+              <p>Elige cual quieres inspeccionar en el mapa y en la lista de pasos.</p>
             </div>
 
             <div class="route-options-grid">
@@ -269,7 +286,8 @@
                     </span>
                   </div>
 
-                  <div class="pill-list">
+                                    <div class="pill-list">
+                    <span [class]="'tag ' + routeRiskBadgeClass(route)">{{ routeRiskLabel(route) }}</span>
                     <span class="tag">{{ formatDistance(route.distanceKm) }}</span>
                     <span class="tag">{{ route.steps.length }} pasos</span>
                   </div>
@@ -281,8 +299,8 @@
           <section class="tracking-panel" aria-labelledby="tracking-title">
             <div class="route-options-stack__header">
               <span class="subtle-label">Seguimiento</span>
-              <h3 id="tracking-title">Compartir ubicaciÃ³n</h3>
-              <p>Genera un enlace pÃºblico para consultar la Ãºltima ubicaciÃ³n disponible.</p>
+              <h3 id="tracking-title">Compartir ubicacion</h3>
+              <p>Genera un enlace publico para consultar la ultima ubicacion disponible.</p>
             </div>
 
             @if (!activeTracking()) {
@@ -292,12 +310,12 @@
                 [disabled]="!canShareLocation()"
                 (click)="shareLocation()"
               >
-                {{ isSharing() ? 'Compartiendo...' : 'Compartir ubicaciÃ³n' }}
+                {{ isSharing() ? 'Compartiendo...' : 'Compartir ubicacion' }}
               </button>
             } @else {
               <div class="tracking-card">
                 <div>
-                  <span class="subtle-label">Enlace pÃºblico</span>
+                  <span class="subtle-label">Enlace publico</span>
                   <p class="tracking-link">{{ publicTrackingLink() }}</p>
                 </div>
 
@@ -363,7 +381,7 @@
 
                       <div class="route-step-card__body">
                         <p class="route-step-card__instruction">
-                          {{ step.instruction || 'Continúa por el tramo indicado.' }}
+                          {{ step.instruction || 'Continua por el tramo indicado.' }}
                         </p>
 
                         <div class="pill-list">
@@ -380,14 +398,14 @@
               } @else {
                 <div class="empty-state">
                   <h3>Sin instrucciones detalladas</h3>
-                  <p>La respuesta no incluyó pasos giro a giro para la ruta seleccionada.</p>
+                  <p>La respuesta no incluyo pasos giro a giro para la ruta seleccionada.</p>
                 </div>
               }
             </div>
           </section>
         } @else {
           <div class="empty-state">
-            <h3>Aún no hay una ruta cargada</h3>
+            <h3>Aun no hay una ruta cargada</h3>
             <p>Completa el formulario y presiona "Buscar ruta" para consultar el backend.</p>
           </div>
         }
