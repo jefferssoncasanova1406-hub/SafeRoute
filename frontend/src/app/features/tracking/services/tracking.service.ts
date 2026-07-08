@@ -20,6 +20,14 @@ export class TrackingService {
     });
   }
 
+  updateLocation(token: string, latitud: number, longitud: number): Observable<void> {
+    return this.http.put<void>(
+      `${this.baseUrl}/${encodeURIComponent(token)}/ubicacion`,
+      { latitud, longitud },
+      { headers: this.authService.buildAuthorizedHeaders() },
+    );
+  }
+
   stop(token: string): Observable<string> {
     return this.http.put(`${this.baseUrl}/detener/${encodeURIComponent(token)}`, null, {
       headers: this.authService.buildAuthorizedHeaders(),

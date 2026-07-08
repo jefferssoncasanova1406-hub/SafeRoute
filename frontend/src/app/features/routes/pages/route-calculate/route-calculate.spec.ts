@@ -72,6 +72,10 @@ class PrivacyServiceStub {
     userId: 1,
     realTimeLocationEnabled: true,
     personalDataSharingEnabled: true,
+    appNotificationsEnabled: true,
+    emailNotificationsEnabled: false,
+    minRiskLevel: 1,
+    incidentTypesFiltered: 'todos',
     message: 'OK',
   });
 
@@ -134,9 +138,9 @@ describe('RouteCalculatePage', () => {
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('ComparaciÃ³n de alternativas');
-    expect(text).toContain('MÃ¡s rÃ¡pida');
-    expect(text).toContain('MÃ¡s segura');
+    expect(text).toContain('Comparacion de alternativas');
+    expect(text).toContain('Mas rapida');
+    expect(text).toContain('Mas segura');
     expect(text).toContain('Recomendada');
     expect(text).toContain('Riesgo bajo');
     expect(text).toContain('Score 10');
@@ -175,17 +179,17 @@ describe('RouteCalculatePage', () => {
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Ruta directa');
-    expect(text).toContain('No fue posible cargar la evaluaciÃ³n de seguridad');
+    expect(text).toContain('No fue posible cargar la evaluacion de seguridad');
   });
 
   it('muestra compartir solo con ruta calculada y previene doble solicitud', () => {
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Compartir ubicaciÃ³n');
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Compartir ubicacion');
 
     submitForm(fixture.nativeElement as HTMLElement);
     fixture.detectChanges();
 
-    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicaciÃ³n');
-    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicaciÃ³n');
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicacion');
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicacion');
 
     expect(privacyService.getPreferences).toHaveBeenCalledOnce();
   });
@@ -194,7 +198,7 @@ describe('RouteCalculatePage', () => {
     submitForm(fixture.nativeElement as HTMLElement);
     fixture.detectChanges();
 
-    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicaciÃ³n');
+    clickButton(fixture.nativeElement as HTMLElement, 'Compartir ubicacion');
     trackingService.shareSubject.next({
       tokenSeguimiento: 'abc12345',
       urlCompleta: 'https://saferoute.pe/shared/tracking/abc12345',
