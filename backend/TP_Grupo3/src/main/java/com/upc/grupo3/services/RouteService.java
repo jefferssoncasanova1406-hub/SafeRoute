@@ -24,6 +24,7 @@ public class RouteService {
     private static final Set<String> ALLOWED_TRANSPORT_MODES = Set.of("driving", "walking", "cycling");
 
     private final MapboxClient mapboxClient;
+    private final RouteAlternativeSyntheticService routeAlternativeSyntheticService;
 
     public RouteEvaluateResponseDTO evaluateRoute(RouteEvaluateRequestDTO request) {
         NormalizedRequest normalizedRequest = normalizeAndValidate(request);
@@ -38,10 +39,10 @@ public class RouteService {
 
         validateResolvedLocations(originResolved, destinationResolved);
 
-        List<RouteOptionDTO> routes = mapboxClient.getDirections(
+        List<RouteOptionDTO> routes = routeAlternativeSyntheticService.enrichRoutes(mapboxClient.getDirections(
                 originResolved,
                 destinationResolved,
-                normalizedRequest.transportMode());
+                normalizedRequest.transportMode()));
 
         return RouteEvaluateResponseDTO.builder()
                 .originResolved(originResolved)

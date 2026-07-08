@@ -16,6 +16,20 @@
   gap: 1rem;
 }
 
+.route-map-legend,
+.route-summary-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.route-map-note {
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .route-map-shell {
   overflow: hidden;
   border: 1px solid var(--line);

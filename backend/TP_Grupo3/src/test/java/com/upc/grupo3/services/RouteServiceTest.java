@@ -32,7 +32,7 @@ class RouteServiceTest {
 
     @BeforeEach
     void setUp() {
-        routeService = new RouteService(mapboxClient);
+        routeService = new RouteService(mapboxClient, new RouteAlternativeSyntheticService());
     }
 
     @Test
@@ -88,8 +88,12 @@ class RouteServiceTest {
         assertEquals(request.getDepartureTime(), response.getDepartureTime());
         assertEquals(originResolved.getAddress(), response.getOriginResolved().getAddress());
         assertEquals(destinationResolved.getAddress(), response.getDestinationResolved().getAddress());
-        assertEquals(1, response.getRoutes().size());
+        assertEquals(3, response.getRoutes().size());
         assertEquals("route_1", response.getRoutes().get(0).getRouteId());
+        assertEquals("alto", response.getRoutes().get(0).getNivelRiesgo());
+        assertEquals("medio", response.getRoutes().get(1).getNivelRiesgo());
+        assertEquals("bajo", response.getRoutes().get(2).getNivelRiesgo());
+        assertEquals(Boolean.TRUE, response.getRoutes().get(2).getRecomendada());
 
         verify(mapboxClient).getDirections(originResolved, destinationResolved, "driving");
     }
